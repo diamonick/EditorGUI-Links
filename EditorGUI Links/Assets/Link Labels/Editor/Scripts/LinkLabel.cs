@@ -1,3 +1,4 @@
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -5,23 +6,31 @@ using UnityEditor;
 
 namespace LinkLabels
 {
+    public enum LinkFormat
+    {
+        None = 0,
+        Underline = 1,
+        Arrow = 2
+    }
+
     public static class LinkLabel
     {
-        public static void Draw(string url, string caption, Color urlColor)
+        public static void Draw(string url, string caption, Color urlColor, LinkFormat linkFormat = LinkFormat.None)
         {
             // GUI Style: Link.
             GUIStyle linkStyle = new GUIStyle(EditorStyles.linkLabel)
             {
                 border = new RectOffset(0, 0, 0, 0),
-                fontSize = 24,
+                fontSize = 12,
                 richText = true
             };
 
             caption = string.IsNullOrWhiteSpace(caption) ? url : caption;
+            if (linkFormat == LinkFormat.Arrow)
+            {
+                caption = $"{caption} ↗";
+            }
             caption = string.Format($"<color=#{ColorUtility.ToHtmlStringRGB(urlColor)}>{caption}</color>");
-
-            //Color defaultContentColor = GUI.contentColor;
-            //GUI.contentColor = Color.black + (urlColor * 2f);
 
             GUIContent linkContent = new GUIContent(caption, "");
 
@@ -33,11 +42,10 @@ namespace LinkLabels
             EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
 
             // Draw a colored line underneath the link label.
-            Handles.BeginGUI();
-            Handles.color = urlColor;
-            Handles.DrawLine(new Vector3(rect.xMin, rect.yMax), new Vector3(rect.xMax, rect.yMax), 2f);
-            Handles.color = Color.white;
-            Handles.EndGUI();
+            if (linkFormat == LinkFormat.Underline)
+            {
+                UnderlineLink(rect, urlColor);
+            }
 
             if (isClicked)
             {
@@ -72,8 +80,38 @@ namespace LinkLabels
             ColorUtility.TryParseHtmlString(hexColorCode, out hexColor);
             Draw(url, caption, hexColor);
         }
+
+        public static void Draw(string url, string caption, string hexColorCode, LinkFormat linkFormat = LinkFormat.None)
+        {
+            Color hexColor;
+            ColorUtility.TryParseHtmlString(hexColorCode, out hexColor);
+            Draw(url, caption, hexColor, linkFormat);
+        }
         #endregion
 
-        private static void OpenURL(string url) => Application.OpenURL(url);
+        private static void UnderlineLink(Rect rect, Color lineColor)
+        {
+            Handles.BeginGUI();
+            Handles.color = lineColor;
+            Handles.DrawLine(new Vector3(rect.xMin, rect.yMax), new Vector3(rect.xMax, rect.yMax), 2f);
+            Handles.color = Color.white;
+            Handles.EndGUI();
+        }
+
+        private static void OpenURL(string url)
+        {
+            if (!IsValidURL(url))
+                return;
+
+            Application.OpenURL(url);
+        }
+
+        private static bool IsValidURL(string url)
+        {
+            Uri uriResult;
+            bool isURL = Uri.TryCreate(url, UriKind.Absolute, out uriResult)
+                         && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+            return isURL && !string.IsNullOrWhiteSpace(url);
+        }
     }
 }
