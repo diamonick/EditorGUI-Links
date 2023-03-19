@@ -6,33 +6,33 @@ using UnityEditor;
 
 namespace LinkLabels
 {
-    public enum LinkFormat
-    {
-        None = 0,
-        Underline = 1,
-        Arrow = 2
-    }
-
     public static class LinkLabel
     {
-        // Default color: #4C86FC
+        // Default Link Label style.
+        private static readonly string DefaultColor = "#4C86FC";
+        private static readonly GUIStyle DefaultLinkLabelStyle = new GUIStyle(EditorStyles.linkLabel)
+        {
+            border = new RectOffset(0, 0, 0, 0),
+            fontSize = 12,
+            richText = true,
+            wordWrap = false
+        };
 
         // Icon paths
         // Note: Make sure to import the package(s) under Assets to have all icons display properly in the editor window.
         private static readonly string externalLinkIconPath = "Assets/Link Labels/ExternalLinkIcon.png";
 
-        public static void Draw(string url, string caption, Color urlColor, bool underlinkLink = false, bool displayIcon = false)
+        #region Static Method(s)
+        #region Draw Method(s)
+        public static void Draw(string url, string caption, Color urlColor, GUIStyle linkStyle,
+                                bool underlineLink = false, bool displayIcon = false, LetterCase letterCase = LetterCase.None)
         {
-            // GUI Style: Link.
-            GUIStyle linkStyle = new GUIStyle(EditorStyles.linkLabel)
-            {
-                border = new RectOffset(0, 0, 0, 0),
-                fontSize = 12,
-                richText = true
-            };
+            // Get the current GUI content color.
+            Color defaultContentColor = GUI.contentColor;
 
             var icon = (Texture2D)AssetDatabase.LoadAssetAtPath(externalLinkIconPath, typeof(Texture2D));
-            EditorGUIUtility.SetIconSize(new Vector2(12f, 12f));
+            float iconSize = icon != null ? linkStyle.fontSize : 0f;
+            EditorGUIUtility.SetIconSize(new Vector2(iconSize, iconSize));
             icon = displayIcon ? icon : null;
 
             caption = string.IsNullOrWhiteSpace(caption) ? url : caption;
@@ -40,11 +40,14 @@ namespace LinkLabels
             {
                 caption = icon != null ? $" {caption}" : $"{caption} ↗";
             }
+
+            FormatLinkLabelByCase(ref caption, letterCase);
             caption = string.Format($"<color=#{ColorUtility.ToHtmlStringRGB(urlColor)}>{caption}</color>");
 
             GUIContent linkContent = new GUIContent(caption, icon, "");
 
             // Set if link is clicked.
+            urlColor.a = 1f;
             GUI.contentColor = urlColor;
             bool isClicked = GUILayout.Button(linkContent, linkStyle);
             GUI.contentColor = Color.white;
@@ -55,7 +58,7 @@ namespace LinkLabels
             EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
 
             // Draw a colored line underneath the link label.
-            if (underlinkLink)
+            if (underlineLink)
             {
                 UnderlineLink(rect, urlColor);
             }
@@ -73,33 +76,35 @@ namespace LinkLabels
                 }
             }
 
-            //GUI.contentColor = defaultContentColor;
+            // Reset GUI content color.
+            GUI.contentColor = defaultContentColor;
         }
 
         #region Overloading Method(s)
         public static void Draw(string url)
         {
-            Draw(url, url, Color.green);
+            Draw(url, url, GetColorFromHexCode(DefaultColor), DefaultLinkLabelStyle);
         }
 
         public static void Draw(string url, string caption)
         {
-            Draw(url, caption, Color.green);
+            Draw(url, caption, GetColorFromHexCode(DefaultColor), DefaultLinkLabelStyle);
         }
 
         public static void Draw(string url, string caption, string hexColorCode)
         {
-            Color hexColor;
-            ColorUtility.TryParseHtmlString(hexColorCode, out hexColor);
-            Draw(url, caption, hexColor);
+            Color hexColor = GetColorFromHexCode(hexColorCode);
+            Draw(url, caption, hexColor, DefaultLinkLabelStyle);
         }
 
-        public static void Draw(string url, string caption, string hexColorCode, bool underlinkLink = false, bool displayIcon = false)
+        public static void Draw(string url, string caption, string hexColorCode, GUIStyle linkStyle,
+                                bool underlineLink = false, bool displayIcon = false, LetterCase letterCase = LetterCase.None)
         {
-            Color hexColor;
-            ColorUtility.TryParseHtmlString(hexColorCode, out hexColor);
-            Draw(url, caption, hexColor, underlinkLink, displayIcon);
+            Color hexColor = GetColorFromHexCode(hexColorCode);
+            Draw(url, caption, hexColor, linkStyle, underlineLink, displayIcon, letterCase);
         }
+        #endregion
+
         #endregion
 
         private static void UnderlineLink(Rect rect, Color lineColor)
@@ -109,6 +114,19 @@ namespace LinkLabels
             Handles.DrawLine(new Vector3(rect.xMin, rect.yMax), new Vector3(rect.xMax, rect.yMax), 2f);
             Handles.color = Color.white;
             Handles.EndGUI();
+        }
+
+        private static void FormatLinkLabelByCase(ref string linkLabel, LetterCase lc)
+        {
+            switch (lc)
+            {
+                case LetterCase.Upper:
+                    linkLabel = linkLabel.ToUpper();
+                    break;
+                case LetterCase.Lower:
+                    linkLabel = linkLabel.ToLower();
+                    break;
+            }
         }
 
         private static void OpenURL(string url)
@@ -126,5 +144,20 @@ namespace LinkLabels
                          && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
             return isURL && !string.IsNullOrWhiteSpace(url);
         }
+        #endregion
+
+        #region Miscellaneous
+        /// <summary>
+        /// Get color from hex string.
+        /// </summary>
+        /// <param name="hexColorCode">Hex color code string.</param>
+        /// <returns>New color.</returns>
+        private static Color GetColorFromHexCode(string hexColorCode)
+        {
+            Color color = Color.white;
+            ColorUtility.TryParseHtmlString(hexColorCode, out color);
+            return color;
+        }
+        #endregion
     }
 }
