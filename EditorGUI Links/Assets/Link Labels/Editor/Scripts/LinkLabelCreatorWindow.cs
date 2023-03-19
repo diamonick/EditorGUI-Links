@@ -18,6 +18,7 @@ namespace LinkLabels
         // Icon paths
         // Note: Make sure to import the package(s) under Assets to have all icons display properly in the editor window.
         private readonly string infoTooltipIconPath = "Assets/Link Labels/InfoTooltipIcon.png";
+        private readonly string copyIconPath = "Assets/Link Labels/CopyIcon.png";
 
         private static readonly string windowTitle = "Link Label Creator";
         private static readonly string description = "Link Labels is a lightweight asset which allows developers to easily create " +
@@ -29,13 +30,22 @@ namespace LinkLabels
         private string previewText;
         private Color linkLabelColor;
 
+        private bool underlinkLink;
+        private bool displayLinkIcon;
+
         #region GUI Styles
         private GUIStyle defaultStyle;
         private GUIStyle infoIconStyle;
         private GUIStyle descriptionStyle;
+        private GUIStyle copyButtonStyle;
         #endregion
 
         #region Tooltips
+        private static readonly string urlTooltip = "Type a valid URL.";
+        private static readonly string captionTooltip = "Type a caption. If a caption is not provided, the URL will be used " +
+                                                        "as the name of the link instead.";
+        private static readonly string linkColorTooltip = "Choose a custom link color.";
+        private static readonly string formatOptionsTooltip = "Change link label formatting such as underlinng or adding icon(s).";
         #endregion
 
         /// <summary>
@@ -71,6 +81,12 @@ namespace LinkLabels
                 contentOffset = new Vector2(0f, 3f),
             };
 
+            copyButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                fixedWidth = 24,
+                fixedHeight = 24
+            };
+
             #region Banner
             // Get banner image texture.
             Texture2D banner = (Texture2D)AssetDatabase.LoadAssetAtPath(bannerPath, typeof(Texture2D));
@@ -98,7 +114,7 @@ namespace LinkLabels
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("URL", new GUIStyle(EditorStyles.boldLabel), GUILayout.ExpandWidth(false));
-            DrawInfoTooltipIcon("Type a valid URL.");
+            DrawInfoTooltipIcon(urlTooltip);
             GUILayout.EndHorizontal();
             urlText = GUILayout.TextField(urlText);
 
@@ -109,7 +125,7 @@ namespace LinkLabels
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Caption", new GUIStyle(EditorStyles.boldLabel), GUILayout.ExpandWidth(false));
-            DrawInfoTooltipIcon("Type a caption.");
+            DrawInfoTooltipIcon(captionTooltip);
             GUILayout.EndHorizontal();
             previewText = GUILayout.TextField(previewText);
 
@@ -118,20 +134,47 @@ namespace LinkLabels
             EditorGUIUtility.AddCursorRect(captionRect, MouseCursor.Text);
             GUILayout.Space(5f);
 
-            GUILayout.Label("Select a custom link color:", new GUIStyle(EditorStyles.boldLabel));
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Link Color", new GUIStyle(EditorStyles.boldLabel), GUILayout.ExpandWidth(false));
+            DrawInfoTooltipIcon(linkColorTooltip);
+            GUILayout.EndHorizontal();
             linkLabelColor = EditorGUILayout.ColorField(linkLabelColor);
+            GUILayout.Space(5f);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Format Options", new GUIStyle(EditorStyles.boldLabel), GUILayout.ExpandWidth(false));
+            DrawInfoTooltipIcon(formatOptionsTooltip);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginVertical(EditorStyles.helpBox);
+            underlinkLink = GUILayout.Toggle(underlinkLink, " Underlink Link?");
+            displayLinkIcon = GUILayout.Toggle(displayLinkIcon, " Display External Link icon?");
+            GUILayout.EndVertical();
 
             GUILayout.FlexibleSpace();
             DrawLine(Color.gray, 1, 4f);
 
             GUILayout.Label("Link Label Preview:", new GUIStyle(EditorStyles.boldLabel));
             GUI.backgroundColor = Color.black * 2f;
+            GUILayout.BeginHorizontal();
             GUILayout.BeginVertical(EditorStyles.helpBox);
-            LinkLabel.Draw(urlText, previewText, linkLabelColor);
+            LinkLabel.Draw(urlText, previewText, linkLabelColor, underlinkLink, displayLinkIcon);
             GUILayout.EndVertical();
 
+            GUI.backgroundColor = Color.white;
+            var copyIcon = (Texture2D)AssetDatabase.LoadAssetAtPath(copyIconPath, typeof(Texture2D));
+            if (GUILayout.Button(copyIcon, copyButtonStyle))
+            {
+                string methodText = GetLinkLabelMethodText();
+                CopyToClipboard(methodText);
+            }
+
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(10f);
         }
 
+        #region Draw Method(s)
         /// <summary>
         /// Draw a line in the editor window.
         /// </summary>
@@ -161,66 +204,26 @@ namespace LinkLabels
             GUIContent iconContent = new GUIContent(icon, tooltip);
             EditorGUIUtility.SetIconSize(new Vector2(12f, 12f));
             GUILayout.Label(iconContent, infoIconStyle, GUILayout.ExpandWidth(false));
-
-            var rect = GUILayoutUtility.GetLastRect();
-            rect.width = infoIconStyle.CalcSize(new GUIContent(icon)).x;
-            EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
         }
+        #endregion
 
         /// <summary>
-        /// Draw box w/ multiple selectable options.
+        /// Copies a string to the Clipboard.
         /// </summary>
-        /// <param name="addParenthesesOption">Boolean parameter to add parentheses ().</param>
-        /// <param name="addBracketsOption">Boolean parameter to add brackets [].</param>
-        /// <param name="addBracesOption">Boolean parameter to add braces {}.</param>
-        /// <param name="addUnderscoreOption">Boolean parameter to add underscore _.</param>
-        /// <param name="addHyphenOption">Boolean parameter to add hyphen -.</param>
-        private void DrawFormatBox(ref bool addParenthesesOption, ref bool addBracketsOption, ref bool addBracesOption,
-                                         ref bool addUnderscoreOption, ref bool addHyphenOption)
+        public void CopyToClipboard(string s)
         {
-            GUILayout.Label("Format number with:");
-            EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
-            addParenthesesOption = GUILayout.Toggle(addParenthesesOption, " Parentheses \"()\"", EditorStyles.radioButton);
-            if (addParenthesesOption)
-            {
-                addBracketsOption = false;
-                addBracesOption = false;
-                addUnderscoreOption = false;
-                addHyphenOption = false;
-            }
-            addBracketsOption = GUILayout.Toggle(addBracketsOption, " Brackets \"[]\"", EditorStyles.radioButton);
-            if (addBracketsOption)
-            {
-                addParenthesesOption = false;
-                addBracesOption = false;
-                addUnderscoreOption = false;
-                addHyphenOption = false;
-            }
-            addBracesOption = GUILayout.Toggle(addBracesOption, " Braces \"{}\"", EditorStyles.radioButton);
-            if (addBracesOption)
-            {
-                addParenthesesOption = false;
-                addBracketsOption = false;
-                addUnderscoreOption = false;
-                addHyphenOption = false;
-            }
-            addUnderscoreOption = GUILayout.Toggle(addUnderscoreOption, " Underscore \"_\"", EditorStyles.radioButton);
-            if (addUnderscoreOption)
-            {
-                addParenthesesOption = false;
-                addBracketsOption = false;
-                addBracesOption = false;
-                addHyphenOption = false;
-            }
-            addHyphenOption = GUILayout.Toggle(addHyphenOption, " Hyphen \"-\"", EditorStyles.radioButton);
-            if (addHyphenOption)
-            {
-                addParenthesesOption = false;
-                addBracketsOption = false;
-                addBracesOption = false;
-                addUnderscoreOption = false;
-            }
-            EditorGUILayout.EndHorizontal();
+            GUIUtility.systemCopyBuffer = s;
+
+            // Display quick notification.
+            window.ShowNotification(new GUIContent($"Copied!"));
+        }
+
+        private string GetLinkLabelMethodText()
+        {
+            string linkLabelColorString = $"new Color({linkLabelColor.r}f, {linkLabelColor.g}f, {linkLabelColor.b}f)";
+            string underlineLinkString = underlinkLink.ToString().ToLower();
+            string displayLinkIconString = displayLinkIcon.ToString().ToLower();
+            return $"LinkLabel.Draw(\"{urlText}\", \"{previewText}\", {linkLabelColorString}, {underlineLinkString}, {displayLinkIconString});";
         }
 
         private static bool IsValidURL(string url)

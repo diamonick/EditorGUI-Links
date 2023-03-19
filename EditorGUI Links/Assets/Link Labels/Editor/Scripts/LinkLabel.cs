@@ -15,7 +15,13 @@ namespace LinkLabels
 
     public static class LinkLabel
     {
-        public static void Draw(string url, string caption, Color urlColor, LinkFormat linkFormat = LinkFormat.None)
+        // Default color: #4C86FC
+
+        // Icon paths
+        // Note: Make sure to import the package(s) under Assets to have all icons display properly in the editor window.
+        private static readonly string externalLinkIconPath = "Assets/Link Labels/ExternalLinkIcon.png";
+
+        public static void Draw(string url, string caption, Color urlColor, bool underlinkLink = false, bool displayIcon = false)
         {
             // GUI Style: Link.
             GUIStyle linkStyle = new GUIStyle(EditorStyles.linkLabel)
@@ -25,24 +31,31 @@ namespace LinkLabels
                 richText = true
             };
 
+            var icon = (Texture2D)AssetDatabase.LoadAssetAtPath(externalLinkIconPath, typeof(Texture2D));
+            EditorGUIUtility.SetIconSize(new Vector2(12f, 12f));
+            icon = displayIcon ? icon : null;
+
             caption = string.IsNullOrWhiteSpace(caption) ? url : caption;
-            if (linkFormat == LinkFormat.Arrow)
+            if (displayIcon)
             {
-                caption = $"{caption} ↗";
+                caption = icon != null ? $" {caption}" : $"{caption} ↗";
             }
             caption = string.Format($"<color=#{ColorUtility.ToHtmlStringRGB(urlColor)}>{caption}</color>");
 
-            GUIContent linkContent = new GUIContent(caption, "");
+            GUIContent linkContent = new GUIContent(caption, icon, "");
 
             // Set if link is clicked.
+            GUI.contentColor = urlColor;
             bool isClicked = GUILayout.Button(linkContent, linkStyle);
+            GUI.contentColor = Color.white;
 
             var rect = GUILayoutUtility.GetLastRect();
-            rect.width = linkStyle.CalcSize(new GUIContent(caption)).x;
+            float contentWidth = linkStyle.CalcSize(new GUIContent(caption)).x;
+            rect.width = icon != null ? contentWidth + EditorGUIUtility.GetIconSize().x : contentWidth;
             EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
 
             // Draw a colored line underneath the link label.
-            if (linkFormat == LinkFormat.Underline)
+            if (underlinkLink)
             {
                 UnderlineLink(rect, urlColor);
             }
@@ -81,11 +94,11 @@ namespace LinkLabels
             Draw(url, caption, hexColor);
         }
 
-        public static void Draw(string url, string caption, string hexColorCode, LinkFormat linkFormat = LinkFormat.None)
+        public static void Draw(string url, string caption, string hexColorCode, bool underlinkLink = false, bool displayIcon = false)
         {
             Color hexColor;
             ColorUtility.TryParseHtmlString(hexColorCode, out hexColor);
-            Draw(url, caption, hexColor, linkFormat);
+            Draw(url, caption, hexColor, underlinkLink, displayIcon);
         }
         #endregion
 
