@@ -8,14 +8,13 @@ using LinkLabels;
 
 namespace LinkLabels
 {
-    [Flags]
     public enum CustomFontStyle
     {
         Normal = 0,
         Bold = 1,
         Italic = 2,
-        Underline = 3,
-        BoldandItalic = 4
+        BoldandItalic = 3,
+        Underline = 4,
     }
 
     public enum LetterCase
@@ -27,6 +26,9 @@ namespace LinkLabels
 
     public class LinkLabelCreatorWindow : EditorWindow
     {
+        private const int MIN_FONT_SIZE = 1;
+        private const int MAX_FONT_SIZE = 100;
+
         private static LinkLabelCreatorWindow window;    // Editor window.
         private static readonly string DefaultColor = "#4C86FC";
 
@@ -38,13 +40,18 @@ namespace LinkLabels
         // Note: Make sure to import the package(s) under Assets to have all icons display properly in the editor window.
         private readonly string infoTooltipIconPath = "Assets/Link Labels/InfoTooltipIcon.png";
         private readonly string copyIconPath = "Assets/Link Labels/CopyIcon.png";
+        private readonly string checkmarkIconPath = "Assets/Link Labels/CheckmarkIcon.png";
 
         private static readonly string windowTitle = "Link Label Creator";
         private static readonly string description = "Link Labels is a lightweight asset which allows developers to easily create " +
                                                      "and display custom links in editor windows.\n\n" +
+                                                     "Feel free to use the Link Label Creator to quickly create custom link labels, " +
+                                                     "and copy/paste it to your preferred code editor/IDE.\n\n" +
                                                      "For more information on implementing Link Labels, check out the official online " +
                                                      "documentation (PDF) in the link below.";
         private static readonly string examplesInfo = "The examples below showcase a wide variety of link labels you can create.";
+        private static readonly string invalidURLWarning = "Invalid URL address. Please provide a valid URL in the text field " +
+                                                           "above to open the specified URL.";
 
         private string urlText;
         private string previewText;
@@ -58,9 +65,9 @@ namespace LinkLabels
                 return linkLabelColor == GetColorFromHexCode(DefaultColor);
             }
         }
-        private CustomFontStyle fontStyle = CustomFontStyle.Normal;
+        private CustomFontStyle fontStyle;
         private int fontStyleID { get { return (int)fontStyle; } }
-        string[] fontStyleStrings = { "Normal", "Bold", "Italic", "Underline" };
+        string[] fontStyleStrings = { "Normal", "Bold", "Italic", "Bold and Italic", "Underline" };
         private LetterCase letterCase = LetterCase.None;
         string[] letterCaseStrings = { "None", "Uppercase", "Lowercase" };
         private int fontSize = 12;
@@ -71,9 +78,11 @@ namespace LinkLabels
         #region GUI Styles
         private GUIStyle infoIconStyle;
         private GUIStyle descriptionStyle;
-        private GUIStyle copyButtonStyle;
+        private GUIStyle formatOptionStyle;
         private GUIStyle incrementButtonStyle;
         private GUIStyle customLinkLabelStyle;
+        private GUIStyle copyButtonStyle;
+        // Good
         #endregion
 
         #region Tooltips
@@ -83,7 +92,8 @@ namespace LinkLabels
         private static readonly string linkColorTooltip = "Choose a custom link color.";
         private static readonly string formatOptionsTooltip = "Change link label formatting such as underlinng or adding icon(s).";
         private static readonly string fontStyleTooltip = "Type a valid URL.";
-        private static readonly string fontSizeTooltip = "Type a valid URL.";
+        private static readonly string fontSizeTooltip = "Set the font size of the link label.\n\n" +
+                                                         $"Range: {MIN_FONT_SIZE} - {MAX_FONT_SIZE}";
         #endregion
 
         /// <summary>
@@ -114,14 +124,19 @@ namespace LinkLabels
 
             infoIconStyle = new GUIStyle()
             {
-                contentOffset = new Vector2(0f, 4.5f),
                 stretchWidth = false
             };
 
             copyButtonStyle = new GUIStyle(GUI.skin.button)
             {
-                fixedWidth = 24,
-                fixedHeight = 24,
+                fixedHeight = 48,
+                fontSize = 20,
+                fontStyle = FontStyle.Bold
+            };
+
+            formatOptionStyle = new GUIStyle(EditorStyles.label)
+            {
+                stretchWidth = true
             };
 
             incrementButtonStyle = new GUIStyle(GUI.skin.button)
@@ -161,7 +176,7 @@ namespace LinkLabels
             }
 
             // Calculate field width.
-            float fieldWidth = position.width / 2f;
+            float fieldWidth = (position.width / 2f) + 29f;
 
             #region Banner
             // Get banner image texture.
@@ -180,7 +195,7 @@ namespace LinkLabels
 
             GUILayout.Space(4f);
 
-            LinkLabel.Draw("https://assetstore.unity.com/", "Online Documentation (PDF)", "#00ff00");
+            LinkLabel.Draw("https://assetstore.unity.com/", "Online Documentation (PDF)", "#00FFE1", 12, 1, 0, false, true);
             DrawLine(Color.gray, 1, 4f);
             GUILayout.Space(8f);
 
@@ -194,6 +209,16 @@ namespace LinkLabels
             GUILayout.EndHorizontal();
             urlText = EditorGUILayout.TextField(urlText);
 
+            // Display a warning block if the URL is invalid.
+            if (!IsValidURL(urlText))
+            {
+                GUI.backgroundColor = GetColorFromHexCode("#ffa200") * 1.5f;
+                GUI.contentColor = GetColorFromHexCode("#ffd000") * 1.5f;
+                EditorGUILayout.HelpBox(invalidURLWarning, MessageType.Warning);
+                GUI.contentColor = Color.white;
+                GUI.backgroundColor = Color.white;
+            }
+
             GUILayout.Space(5f);
 
             GUILayout.BeginHorizontal();
@@ -204,6 +229,7 @@ namespace LinkLabels
 
             GUILayout.Space(5f);
 
+            #region Format Options
             GUILayout.BeginHorizontal();
             GUILayout.Label("Format Options", new GUIStyle(EditorStyles.boldLabel), GUILayout.ExpandWidth(false));
             DrawInfoTooltipIcon(formatOptionsTooltip);
@@ -211,48 +237,63 @@ namespace LinkLabels
 
             GUILayout.BeginVertical(EditorStyles.helpBox);
 
+            #region Font Style
             GUILayout.BeginHorizontal();
             DrawBulletPoint("#61ffda");
-            GUILayout.Label("Font Style", GUILayout.ExpandWidth(false));
-            DrawInfoTooltipIcon(fontStyleTooltip, true);
+            GUILayout.Label("Font Style", formatOptionStyle);
+            GUI.backgroundColor = GetColorFromHexCode("#2bbcff") * 2.5f;
             fontStyle = (CustomFontStyle)EditorGUILayout.Popup((int)fontStyle, fontStyleStrings, GUILayout.Width(fieldWidth));
+            GUI.backgroundColor = Color.white;
             GUILayout.EndHorizontal();
+            #endregion
 
             GUILayout.Space(5f);
 
+            #region Letter Case
             GUILayout.BeginHorizontal();
             DrawBulletPoint("#ffbd61");
-            GUILayout.Label("Letter Case", GUILayout.ExpandWidth(false));
-            DrawInfoTooltipIcon(fontStyleTooltip, true);
+            GUILayout.Label("Letter Case", formatOptionStyle);
+            GUI.backgroundColor = GetColorFromHexCode("#ff9400") * 2.5f;
             letterCase = (LetterCase)EditorGUILayout.Popup((int)letterCase, letterCaseStrings, GUILayout.Width(fieldWidth));
+            GUI.backgroundColor = Color.white;
             GUILayout.EndHorizontal();
+            #endregion
 
             GUILayout.Space(5f);
 
+            #region Font Size
             GUILayout.BeginHorizontal();
             DrawBulletPoint("#61ffda");
-            GUILayout.Label("Font Size", GUILayout.ExpandWidth(false));
-            DrawInfoTooltipIcon(fontSizeTooltip, true);
+            GUILayout.Label("Font Size", formatOptionStyle);
+            GUI.enabled = fontSize > MIN_FONT_SIZE;
+            GUI.backgroundColor = fontSize > MIN_FONT_SIZE ? GetColorFromHexCode("#00f088") * 2f : Color.white;
             if (GUILayout.Button("-", incrementButtonStyle))
             {
-                fontSize = Mathf.Clamp(fontSize - 1, 1, short.MaxValue);
+                fontSize = Mathf.Clamp(fontSize - 1, MIN_FONT_SIZE, MAX_FONT_SIZE);
             }
-            fontSize = EditorGUILayout.IntField(Mathf.Clamp(fontSize, 1, short.MaxValue), GUILayout.ExpandWidth(false), GUILayout.Width(fieldWidth - 54));
+            GUI.backgroundColor = Color.white;
+            GUI.enabled = true;
+            fontSize = EditorGUILayout.IntField(Mathf.Clamp(fontSize, MIN_FONT_SIZE, MAX_FONT_SIZE), GUILayout.ExpandWidth(false), GUILayout.Width(fieldWidth - 54));
+            GUI.enabled = fontSize < MAX_FONT_SIZE;
+            GUI.backgroundColor = fontSize < MAX_FONT_SIZE ? GetColorFromHexCode("#00f088") * 2f : Color.white;
             if (GUILayout.Button("+", incrementButtonStyle))
             {
-                fontSize = Mathf.Clamp(fontSize + 1, 1, short.MaxValue);
+                fontSize = Mathf.Clamp(fontSize + 1, MIN_FONT_SIZE, MAX_FONT_SIZE);
             }
+            GUI.backgroundColor = Color.white;
+            GUI.enabled = true;
             GUILayout.EndHorizontal();
+            #endregion
 
             GUILayout.Space(5f);
 
+            #region Link Color
             GUILayout.BeginHorizontal();
             DrawBulletPoint("#ffbd61");
-            GUILayout.Label("Link Color", GUILayout.ExpandWidth(false));
-            DrawInfoTooltipIcon(linkColorTooltip, true);
-            linkLabelColor = EditorGUILayout.ColorField(linkLabelColor, GUILayout.ExpandWidth(true), GUILayout.Width(fieldWidth - 26f));
+            GUILayout.Label("Link Color", formatOptionStyle);
+            linkLabelColor = EditorGUILayout.ColorField(linkLabelColor, GUILayout.ExpandWidth(true), GUILayout.Width(fieldWidth - 27f));
             GUI.enabled = !IsDefaultColor;
-            GUI.backgroundColor = IsDefaultColor ? Color.white : GetColorFromHexCode("#00ff00") * 2f;
+            GUI.backgroundColor = IsDefaultColor ? Color.white : GetColorFromHexCode("#00f088") * 2f;
             if (GUILayout.Button("R", incrementButtonStyle))
             {
                 ResetLinkLabelColor();
@@ -260,36 +301,43 @@ namespace LinkLabels
             GUI.backgroundColor = Color.white;
             GUI.enabled = true;
             GUILayout.EndHorizontal();
+            #endregion
 
             GUILayout.Space(5f);
 
+            #region Display Icon?
             GUILayout.BeginHorizontal();
             DrawBulletPoint("#61ffda");
-            displayLinkIcon = EditorGUILayout.Toggle("Display External Link icon?", displayLinkIcon);
+            GUILayout.Label("Display Icon?", formatOptionStyle);
+            displayLinkIcon = EditorGUILayout.Toggle(displayLinkIcon);
             GUILayout.EndHorizontal();
+            #endregion
 
             GUILayout.EndVertical();
+            #endregion
 
             GUILayout.FlexibleSpace();
             DrawLine(Color.gray, 1, 4f);
 
             GUILayout.Label("Link Label Preview:", new GUIStyle(EditorStyles.boldLabel));
             GUI.backgroundColor = Color.black * 2f;
-            GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical(EditorStyles.helpBox);
-            LinkLabel.Draw(urlText, previewText, linkLabelColor, customLinkLabelStyle, underlineLink, displayLinkIcon, letterCase);
-            GUILayout.EndVertical();
+            GUILayout.BeginHorizontal(EditorStyles.helpBox, GUILayout.ExpandWidth(true));
+            LinkLabel.Draw(urlText, previewText, linkLabelColor, customLinkLabelStyle, letterCase, underlineLink, displayLinkIcon);
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(2f);
 
             GUI.backgroundColor = Color.white;
             var copyIcon = (Texture2D)AssetDatabase.LoadAssetAtPath(copyIconPath, typeof(Texture2D));
-            EditorGUIUtility.SetIconSize(new Vector2(12f, 12f));
-            if (GUILayout.Button(copyIcon, copyButtonStyle))
+            EditorGUIUtility.SetIconSize(new Vector2(18f, 18f));
+            GUI.backgroundColor = GetColorFromHexCode("#0062ff") * 4f;
+            GUIContent copyButtonContent = new GUIContent(" Copy", copyIcon);
+            if (GUILayout.Button(copyButtonContent, copyButtonStyle))
             {
                 string methodText = ParseLinkLabelMethod();
                 CopyToClipboard(methodText);
             }
-
-            GUILayout.EndHorizontal();
+            GUI.backgroundColor = Color.white;
 
             GUILayout.Space(10f);
         }
@@ -320,11 +368,18 @@ namespace LinkLabels
 
         private void DrawInfoTooltipIcon(string tooltip, bool expandWidth = false)
         {
+            Vector2 defaultIconSize = EditorGUIUtility.GetIconSize();
+
+            GUILayout.BeginVertical();
+            GUILayout.Space(4.5f);
             var icon = (Texture2D)AssetDatabase.LoadAssetAtPath(infoTooltipIconPath, typeof(Texture2D));
-            GUIContent iconContent = new GUIContent(icon, tooltip);
             EditorGUIUtility.SetIconSize(new Vector2(10f, 10f));
+            GUIContent iconContent = new GUIContent(icon, tooltip);
             GUILayout.Label(iconContent, infoIconStyle);
+            GUILayout.EndVertical();
             GUILayout.Label("", GUILayout.ExpandWidth(expandWidth));
+
+            EditorGUIUtility.SetIconSize(defaultIconSize);
         }
 
         /// <summary>
@@ -358,12 +413,12 @@ namespace LinkLabels
             GUIUtility.systemCopyBuffer = s;
 
             // Display quick notification.
-            window.ShowNotification(new GUIContent($"Copied!"));
+            window.ShowNotification(new GUIContent($"Link Label\n\nCopied!"));
         }
 
         private string ParseLinkLabelMethod()
         {
-            string linkLabelColorString = $"new Color({linkLabelColor.r}f, {linkLabelColor.g}f, {linkLabelColor.b}f)";
+            string linkLabelColorHexCode = ColorUtility.ToHtmlStringRGB(linkLabelColor);
             string underlineLinkString = underlineLink.ToString().ToLower();
             string displayLinkIconString = displayLinkIcon.ToString().ToLower();
 
@@ -371,8 +426,8 @@ namespace LinkLabels
                                     "{" +
                                     "}";
 
-            return $"LinkLabel.Draw(\"{urlText}\", \"{previewText}\", {linkLabelColorString}, {8}," +
-                   $"{underlineLinkString}, {displayLinkIconString}, LetterCase.{letterCase});";
+            return $"LinkLabel.Draw(\"{urlText}\", \"{previewText}\", \"#{linkLabelColorHexCode}\", {fontSize}, " +
+                   $"{(int)fontStyle}, {(int)letterCase}, {underlineLinkString}, {displayLinkIconString});";
         }
 
         private void ResetLinkLabelColor()

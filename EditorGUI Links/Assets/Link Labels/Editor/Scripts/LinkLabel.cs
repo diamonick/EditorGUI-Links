@@ -10,7 +10,7 @@ namespace LinkLabels
     {
         // Default Link Label style.
         private static readonly string DefaultColor = "#4C86FC";
-        private static readonly GUIStyle DefaultLinkLabelStyle = new GUIStyle(EditorStyles.linkLabel)
+        private static GUIStyle DefaultLinkLabelStyle = new GUIStyle(EditorStyles.linkLabel)
         {
             border = new RectOffset(0, 0, 0, 0),
             fontSize = 12,
@@ -25,10 +25,11 @@ namespace LinkLabels
         #region Static Method(s)
         #region Draw Method(s)
         public static void Draw(string url, string caption, Color urlColor, GUIStyle linkStyle,
-                                bool underlineLink = false, bool displayIcon = false, LetterCase letterCase = LetterCase.None)
+                                LetterCase letterCase = LetterCase.None, bool underlineLink = false, bool displayIcon = false)
         {
             // Get the current GUI content color.
             Color defaultContentColor = GUI.contentColor;
+            Vector2 defaultIconSize = EditorGUIUtility.GetIconSize();
 
             var icon = (Texture2D)AssetDatabase.LoadAssetAtPath(externalLinkIconPath, typeof(Texture2D));
             float iconSize = icon != null ? linkStyle.fontSize : 0f;
@@ -38,24 +39,30 @@ namespace LinkLabels
             caption = string.IsNullOrWhiteSpace(caption) ? url : caption;
             if (displayIcon)
             {
-                caption = icon != null ? $" {caption}" : $"{caption} ↗";
+                caption = icon != null ? $"{caption}" : $"{caption} ↗";
             }
 
             FormatLinkLabelByCase(ref caption, letterCase);
             caption = string.Format($"<color=#{ColorUtility.ToHtmlStringRGB(urlColor)}>{caption}</color>");
 
-            GUIContent linkContent = new GUIContent(caption, icon, "");
+            GUIContent linkContent = new GUIContent(caption);
 
             // Set if link is clicked.
             urlColor.a = 1f;
             GUI.contentColor = urlColor;
+            GUILayout.BeginHorizontal();
             bool isClicked = GUILayout.Button(linkContent, linkStyle);
-            GUI.contentColor = Color.white;
-
             var rect = GUILayoutUtility.GetLastRect();
-            float contentWidth = linkStyle.CalcSize(new GUIContent(caption)).x;
-            rect.width = icon != null ? contentWidth + EditorGUIUtility.GetIconSize().x : contentWidth;
-            EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
+            GUILayout.Button(icon, linkStyle);
+            GUI.contentColor = Color.white;
+            GUILayout.EndHorizontal();
+
+            if (IsValidURL(url))
+            {
+                float contentWidth = linkStyle.CalcSize(new GUIContent(caption)).x + EditorGUIUtility.GetIconSize().x;
+                rect.width = icon != null ? contentWidth + EditorGUIUtility.GetIconSize().x : contentWidth;
+                EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
+            }
 
             // Draw a colored line underneath the link label.
             if (underlineLink)
@@ -78,6 +85,7 @@ namespace LinkLabels
 
             // Reset GUI content color.
             GUI.contentColor = defaultContentColor;
+            EditorGUIUtility.SetIconSize(defaultIconSize);
         }
 
         #region Overloading Method(s)
@@ -98,10 +106,40 @@ namespace LinkLabels
         }
 
         public static void Draw(string url, string caption, string hexColorCode, GUIStyle linkStyle,
-                                bool underlineLink = false, bool displayIcon = false, LetterCase letterCase = LetterCase.None)
+                                LetterCase letterCase = LetterCase.None, bool underlineLink = false, bool displayIcon = false)
         {
             Color hexColor = GetColorFromHexCode(hexColorCode);
-            Draw(url, caption, hexColor, linkStyle, underlineLink, displayIcon, letterCase);
+            Draw(url, caption, hexColor, linkStyle, letterCase, underlineLink, displayIcon);
+        }
+
+        public static void Draw(string url, string caption, string hexColorCode, int fontSize, CustomFontStyle fontStyle = CustomFontStyle.Normal,
+                                LetterCase letterCase = LetterCase.None, bool underlineLink = false, bool displayIcon = false)
+        {
+            GUIStyle linkStyle = DefaultLinkLabelStyle;
+            linkStyle.fontSize = fontSize;
+
+            switch (fontStyle)
+            {
+                case CustomFontStyle.Underline:
+                    underlineLink = true;
+                    break;
+                default:
+                    underlineLink = false;
+                    linkStyle.fontStyle = (FontStyle)((int)fontStyle);
+                    break;
+            }
+
+            Color hexColor = GetColorFromHexCode(hexColorCode);
+            Draw(url, caption, hexColor, linkStyle, letterCase, underlineLink, displayIcon);
+        }
+
+        public static void Draw(string url, string caption, string hexColorCode, int fontSize, int fontStyleID = 0,
+                                int letterCaseID = 0, bool underlineLink = false, bool displayIcon = false)
+        {
+            CustomFontStyle fontStyle = (CustomFontStyle)fontStyleID;
+            LetterCase letterCase = (LetterCase)letterCaseID;
+
+            Draw(url, caption, hexColorCode, fontSize, fontStyle, letterCase, underlineLink, displayIcon);
         }
         #endregion
 
@@ -111,7 +149,7 @@ namespace LinkLabels
         {
             Handles.BeginGUI();
             Handles.color = lineColor;
-            Handles.DrawLine(new Vector3(rect.xMin, rect.yMax), new Vector3(rect.xMax, rect.yMax), 2f);
+            Handles.DrawLine(new Vector3(rect.xMin, rect.yMax), new Vector3(rect.xMax, rect.yMax));
             Handles.color = Color.white;
             Handles.EndGUI();
         }
