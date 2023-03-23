@@ -8,9 +8,6 @@ namespace LinkLabels
 {
     public static class GUIMethods
     {
-        //public static List<Color> defaultGUIColors;
-        //public static List<Color> defaultGUIContentColors;
-        //public static List<Color> defaultGUIBackgroundColors;
         public static Color defaultGUIColor;
         public static Color defaultGUIContentColor;
         public static Color defaultGUIBackgroundColor;

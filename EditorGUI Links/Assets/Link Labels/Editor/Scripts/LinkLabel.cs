@@ -24,10 +24,12 @@ namespace LinkLabels
 
         #region Static Method(s)
         #region Draw Method(s)
-        public static void Draw(string url, string caption, Color urlColor, GUIStyle linkStyle,
-                                LetterCase letterCase = LetterCase.None, bool underlineLink = false, bool displayIcon = false)
+        public static void Draw(string url, GUIContent linkLabel, Color urlColor, GUIStyle linkStyle,
+                                bool underlineLink = false, bool displayIcon = false)
         {
             Vector2 defaultIconSize = EditorGUIUtility.GetIconSize();
+            string caption = linkLabel.text;
+            string tooltip = linkLabel.tooltip;
 
             var icon = (Texture2D)AssetDatabase.LoadAssetAtPath(externalLinkIconPath, typeof(Texture2D));
             float iconSize = icon != null ? linkStyle.fontSize : 0f;
@@ -40,10 +42,9 @@ namespace LinkLabels
                 caption = icon != null ? $"{caption}" : $"{caption} ↗";
             }
 
-            FormatLinkLabelByCase(ref caption, letterCase);
             caption = string.Format($"<color=#{ColorUtility.ToHtmlStringRGB(urlColor)}>{caption}</color>");
 
-            GUIContent linkContent = new GUIContent(caption);
+            GUIContent linkContent = new GUIContent(caption, tooltip);
 
             // Set if link is clicked.
             urlColor.a = 1f;
@@ -92,29 +93,33 @@ namespace LinkLabels
         #region Overloading Method(s)
         public static void Draw(string url)
         {
-            Draw(url, url, GUIMethods.GetColorFromHexCode(DefaultColor), DefaultLinkLabelStyle);
+            GUIContent linkLabelContent = new GUIContent();
+            Draw(url, linkLabelContent, GUIMethods.GetColorFromHexCode(DefaultColor), DefaultLinkLabelStyle);
         }
 
         public static void Draw(string url, string caption)
         {
-            Draw(url, caption, GUIMethods.GetColorFromHexCode(DefaultColor), DefaultLinkLabelStyle);
+            GUIContent linkLabelContent = new GUIContent(caption);
+            Draw(url, linkLabelContent, GUIMethods.GetColorFromHexCode(DefaultColor), DefaultLinkLabelStyle);
         }
 
         public static void Draw(string url, string caption, string hexColorCode)
         {
+            GUIContent linkLabelContent = new GUIContent(caption);
             Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
-            Draw(url, caption, hexColor, DefaultLinkLabelStyle);
+            Draw(url, linkLabelContent, hexColor, DefaultLinkLabelStyle);
         }
 
         public static void Draw(string url, string caption, string hexColorCode, GUIStyle linkStyle,
-                                LetterCase letterCase = LetterCase.None, bool underlineLink = false, bool displayIcon = false)
+                                bool underlineLink = false, bool displayIcon = false)
         {
+            GUIContent linkLabelContent = new GUIContent(caption);
             Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
-            Draw(url, caption, hexColor, linkStyle, letterCase, underlineLink, displayIcon);
+            Draw(url, linkLabelContent, hexColor, linkStyle, underlineLink, displayIcon);
         }
 
-        public static void Draw(string url, string caption, string hexColorCode, int fontSize, CustomFontStyle fontStyle = CustomFontStyle.Normal,
-                                LetterCase letterCase = LetterCase.None, bool underlineLink = false, bool displayIcon = false)
+        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, int fontSize, CustomFontStyle fontStyle = CustomFontStyle.Normal,
+                                bool underlineLink = false, bool displayIcon = false)
         {
             GUIStyle linkStyle = DefaultLinkLabelStyle;
             linkStyle.fontSize = fontSize;
@@ -140,16 +145,14 @@ namespace LinkLabels
             }
 
             Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
-            Draw(url, caption, hexColor, linkStyle, letterCase, underlineLink, displayIcon);
+            Draw(url, linkLabelContent, hexColor, linkStyle, underlineLink, displayIcon);
         }
 
-        public static void Draw(string url, string caption, string hexColorCode, int fontSize, int fontStyleID = 0,
-                                int letterCaseID = 0, bool underlineLink = false, bool displayIcon = false)
+        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, int fontSize, int fontStyleID = 0,
+                                bool underlineLink = false, bool displayIcon = false)
         {
             CustomFontStyle fontStyle = (CustomFontStyle)fontStyleID;
-            LetterCase letterCase = (LetterCase)letterCaseID;
-
-            Draw(url, caption, hexColorCode, fontSize, fontStyle, letterCase, underlineLink, displayIcon);
+            Draw(url, linkLabelContent, hexColorCode, fontSize, fontStyle, underlineLink, displayIcon);
         }
         #endregion
 
@@ -164,19 +167,10 @@ namespace LinkLabels
             Handles.EndGUI();
         }
 
-        private static void FormatLinkLabelByCase(ref string linkLabel, LetterCase lc)
-        {
-            switch (lc)
-            {
-                case LetterCase.Upper:
-                    linkLabel = linkLabel.ToUpper();
-                    break;
-                case LetterCase.Lower:
-                    linkLabel = linkLabel.ToLower();
-                    break;
-            }
-        }
-
+        /// <summary>
+        /// Open the specified URL.
+        /// </summary>
+        /// <param name="url">The URL to open.</param>
         private static void OpenURL(string url)
         {
             if (!IsValidURL(url))
@@ -185,6 +179,12 @@ namespace LinkLabels
             Application.OpenURL(url);
         }
 
+        /// <summary>
+        /// Check if the specified URL is valid.
+        /// </summary>
+        /// <param name="url">The URL to verify.</param>
+        /// <returns>TRUE if the specified URL can be created, and the URL is not empty or comprised of just whitespace characters.
+        ///          Otherwise, FALSE.</returns>
         private static bool IsValidURL(string url)
         {
             Uri uriResult;
