@@ -9,7 +9,8 @@ namespace LinkLabels
     public static class LinkLabel
     {
         // Default Link Label style.
-        private static readonly string DefaultColor = "#4C86FC";
+        private static readonly string DefaultColorHexCode = "#4C86FC";
+        private static Color DefaultColor { get { return GUIMethods.GetColorFromHexCode(DefaultColorHexCode); } }
         private static GUIStyle DefaultLinkLabelStyle = new GUIStyle(EditorStyles.linkLabel)
         {
             border = new RectOffset(0, 0, 0, 0),
@@ -25,7 +26,7 @@ namespace LinkLabels
         #region Static Method(s)
         #region Draw Method(s)
         public static void Draw(string url, GUIContent linkLabel, Color urlColor, GUIStyle linkStyle,
-                                bool underlineLink = false, bool displayIcon = false)
+                                bool underlineLink, bool displayIcon)
         {
             Vector2 defaultIconSize = EditorGUIUtility.GetIconSize();
             string caption = linkLabel.text;
@@ -44,7 +45,7 @@ namespace LinkLabels
 
             caption = string.Format($"<color=#{ColorUtility.ToHtmlStringRGB(urlColor)}>{caption}</color>");
 
-            GUIContent linkContent = new GUIContent(caption, tooltip);
+            GUIContent linkContent = new GUIContent(caption);
 
             // Set if link is clicked.
             urlColor.a = 1f;
@@ -70,7 +71,7 @@ namespace LinkLabels
 
             Color defaultGUIColor = GUI.color;
             GUI.color = Color.clear;
-            bool isClicked = GUI.Button(rect, "");
+            bool isClicked = GUI.Button(rect, new GUIContent("", tooltip));
             GUI.color = defaultGUIColor;
 
             if (isClicked)
@@ -94,32 +95,32 @@ namespace LinkLabels
         public static void Draw(string url)
         {
             GUIContent linkLabelContent = new GUIContent();
-            Draw(url, linkLabelContent, GUIMethods.GetColorFromHexCode(DefaultColor), DefaultLinkLabelStyle);
+            Draw(url, linkLabelContent, DefaultColor, DefaultLinkLabelStyle, false, false);
         }
 
         public static void Draw(string url, string caption)
         {
             GUIContent linkLabelContent = new GUIContent(caption);
-            Draw(url, linkLabelContent, GUIMethods.GetColorFromHexCode(DefaultColor), DefaultLinkLabelStyle);
+            Draw(url, linkLabelContent, DefaultColor, DefaultLinkLabelStyle, false, false);
         }
 
         public static void Draw(string url, string caption, string hexColorCode)
         {
             GUIContent linkLabelContent = new GUIContent(caption);
             Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
-            Draw(url, linkLabelContent, hexColor, DefaultLinkLabelStyle);
+            Draw(url, linkLabelContent, hexColor, DefaultLinkLabelStyle, false, false);
         }
 
         public static void Draw(string url, string caption, string hexColorCode, GUIStyle linkStyle,
-                                bool underlineLink = false, bool displayIcon = false)
+                                bool underlineLink, bool displayIcon)
         {
             GUIContent linkLabelContent = new GUIContent(caption);
             Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
             Draw(url, linkLabelContent, hexColor, linkStyle, underlineLink, displayIcon);
         }
 
-        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, int fontSize, CustomFontStyle fontStyle = CustomFontStyle.Normal,
-                                bool underlineLink = false, bool displayIcon = false)
+        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, int fontSize, CustomFontStyle fontStyle,
+                                bool underlineLink, bool displayIcon)
         {
             GUIStyle linkStyle = DefaultLinkLabelStyle;
             linkStyle.fontSize = fontSize;
@@ -148,8 +149,8 @@ namespace LinkLabels
             Draw(url, linkLabelContent, hexColor, linkStyle, underlineLink, displayIcon);
         }
 
-        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, int fontSize, int fontStyleID = 0,
-                                bool underlineLink = false, bool displayIcon = false)
+        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, int fontSize, int fontStyleID,
+                                bool underlineLink, bool displayIcon)
         {
             CustomFontStyle fontStyle = (CustomFontStyle)fontStyleID;
             Draw(url, linkLabelContent, hexColorCode, fontSize, fontStyle, underlineLink, displayIcon);
@@ -157,7 +158,11 @@ namespace LinkLabels
         #endregion
 
         #endregion
-
+        /// <summary>
+        /// Add an underline under the link label.
+        /// </summary>
+        /// <param name="rect"></param>
+        /// <param name="lineColor">Underline color.</param>
         private static void UnderlineLink(Rect rect, Color lineColor)
         {
             Handles.BeginGUI();
