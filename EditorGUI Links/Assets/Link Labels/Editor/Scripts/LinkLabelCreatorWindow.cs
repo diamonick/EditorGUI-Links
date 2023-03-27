@@ -15,8 +15,9 @@ namespace LinkLabels
         private const int MAX_FONT_SIZE = 100;
         #endregion
 
-        private static LinkLabelCreatorWindow window;    // Editor window.
-        private static readonly string DefaultColor = "#4C86FC";
+        private static LinkLabelCreatorWindow window;               // Editor window.
+        private Vector2 scrollPosition;                             // Current scroll position
+        private static readonly string DefaultColor = "#4C86FC";    // Default link label color.
 
         #region Asset paths
         // Banner
@@ -150,6 +151,8 @@ namespace LinkLabels
             // Calculate field width.
             float fieldWidth = (position.width / 2f) + 29f;
 
+            // Update scroll position in the editor window.
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, true, GUIStyle.none, GUI.skin.verticalScrollbar);
             #region Banner
             // Get banner image texture.
             Texture2D banner = (Texture2D)AssetDatabase.LoadAssetAtPath(bannerPath, typeof(Texture2D));
@@ -162,6 +165,7 @@ namespace LinkLabels
                 EditorGUI.DrawTextureTransparent(bannerRect, banner);
             }
             #endregion
+
 
             #region Description
             GUILayout.Label(description, descriptionStyle);
@@ -369,6 +373,7 @@ namespace LinkLabels
             GUILayout.Space(5f);
             GUIMethods.EndGUIBackgroundColor();
             #endregion
+            GUILayout.EndScrollView();
             #endregion
         }
 
