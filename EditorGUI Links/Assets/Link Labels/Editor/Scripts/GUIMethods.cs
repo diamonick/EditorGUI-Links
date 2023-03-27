@@ -8,9 +8,12 @@ namespace LinkLabels
 {
     public static class GUIMethods
     {
-        public static Color defaultGUIColor;
-        public static Color defaultGUIContentColor;
-        public static Color defaultGUIBackgroundColor;
+        public static List<Color> savedGUIColors;
+        public static List<Color> savedGUIContentColors;
+        public static List<Color> savedGUIBackgroundColors;
+        private static int GUIColorCount { get { return savedGUIColors != null ? savedGUIColors.Count : 0; } }
+        private static int GUIContentColorCount { get { return savedGUIContentColors != null ? savedGUIContentColors.Count : 0; } }
+        private static int GUIBackgroundColorCount { get { return savedGUIBackgroundColors != null ? savedGUIBackgroundColors.Count : 0; } }
 
         #region GUI.color Method(s)
         /// <summary>
@@ -19,8 +22,20 @@ namespace LinkLabels
         /// <param name="color">The global color to apply to all backgrounds and text inside GUI.color group.</param>
         public static void BeginGUIColor(Color color)
         {
-            defaultGUIColor = GUI.color;
+            // Initialize default GUI color list if list is null.
+            if (savedGUIColors == null)
+            {
+                savedGUIColors = new List<Color>();
+            }
+
+            Color defaultGUIColor = GUI.color;
             GUI.color = color;
+
+            // Add GUI color to list.
+            if (!savedGUIColors.Contains(defaultGUIColor))
+            {
+                savedGUIColors.Add(defaultGUIColor);
+            }
         }
 
         /// <summary>
@@ -38,7 +53,24 @@ namespace LinkLabels
         /// </summary>
         public static void EndGUIColor()
         {
-            GUI.color = defaultGUIColor;
+            GUI.color = GetLastGUIColor();
+
+            // Remove GUI color from list.
+            savedGUIColors.Remove(GetLastGUIColor());
+        }
+
+        /// <summary>
+        /// Get the last GUI color from the list.
+        /// </summary>
+        /// <returns>The last GUI color from the list.</returns>
+        private static Color GetLastGUIColor()
+        {
+            if (savedGUIColors == null)
+                return Color.white;
+            if (GUIColorCount == 0)
+                return Color.white;
+
+            return savedGUIColors[GUIColorCount - 1];
         }
         #endregion
 
@@ -49,8 +81,20 @@ namespace LinkLabels
         /// <param name="color">The global color to apply to all text inside GUI.contentcolor group.</param>
         public static void BeginGUIContentColor(Color color)
         {
-            defaultGUIContentColor = GUI.contentColor;
+            // Initialize default GUI content color list if list is null.
+            if (savedGUIContentColors == null)
+            {
+                savedGUIContentColors = new List<Color>();
+            }
+
+            Color defaultGUIContentColor = GUI.contentColor;
             GUI.contentColor = color;
+
+            // Add GUI content color to list.
+            if (!savedGUIContentColors.Contains(defaultGUIContentColor))
+            {
+                savedGUIContentColors.Add(defaultGUIContentColor);
+            }
         }
 
         /// <summary>
@@ -68,7 +112,24 @@ namespace LinkLabels
         /// </summary>
         public static void EndGUIContentColor()
         {
-            GUI.contentColor = defaultGUIContentColor;
+            GUI.contentColor = GetLastGUIContentColor();
+
+            // Remove GUI content color from list.
+            savedGUIContentColors.Remove(GetLastGUIContentColor());
+        }
+
+        /// <summary>
+        /// Get the last GUI content color from the list.
+        /// </summary>
+        /// <returns>The last GUI content color from the list.</returns>
+        private static Color GetLastGUIContentColor()
+        {
+            if (savedGUIContentColors == null)
+                return Color.white;
+            if (GUIContentColorCount == 0)
+                return Color.white;
+
+            return savedGUIContentColors[GUIContentColorCount - 1];
         }
         #endregion
 
@@ -79,8 +140,20 @@ namespace LinkLabels
         /// <param name="color">The global color to apply to all backgrounds inside GUI.backgroundColor group.</param>
         public static void BeginGUIBackgroundColor(Color color)
         {
-            defaultGUIBackgroundColor = GUI.backgroundColor;
+            // Initialize default GUI background color list if list is null.
+            if (savedGUIBackgroundColors == null)
+            {
+                savedGUIBackgroundColors = new List<Color>();
+            }
+
+            Color defaultGUIBackgroundColor = GUI.backgroundColor;
             GUI.backgroundColor = color;
+
+            // Add GUI background color to list.
+            if (!savedGUIBackgroundColors.Contains(defaultGUIBackgroundColor))
+            {
+                savedGUIBackgroundColors.Add(defaultGUIBackgroundColor);
+            }
         }
 
         /// <summary>
@@ -98,7 +171,24 @@ namespace LinkLabels
         /// </summary>
         public static void EndGUIBackgroundColor()
         {
-            GUI.backgroundColor = defaultGUIBackgroundColor;
+            GUI.backgroundColor = GetLastGUIBackgroundColor();
+
+            // Remove GUI background color from list.
+            savedGUIBackgroundColors.Remove(GetLastGUIBackgroundColor());
+        }
+
+        /// <summary>
+        /// Get the last GUI background color from the list.
+        /// </summary>
+        /// <returns>The last GUI background color from the list.</returns>
+        private static Color GetLastGUIBackgroundColor()
+        {
+            if (savedGUIBackgroundColors == null)
+                return Color.white;
+            if (GUIBackgroundColorCount == 0)
+                return Color.white;
+
+            return savedGUIBackgroundColors[GUIBackgroundColorCount - 1];
         }
         #endregion
 
