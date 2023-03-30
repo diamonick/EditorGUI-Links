@@ -12,28 +12,14 @@ namespace LinkLabels
         Normal = 0,
         Bold = 1,
         Italic = 2,
-        Underline = 4,
-        BoldAndItalic = Bold | Italic,
-        BoldAndUnderline = Bold | Underline,
-        ItalicAndUnderline = Italic | Underline,
-        Everything = Bold | Italic | Underline
+        Underline = 4
     }
 
     public static class LinkLabel
     {
         private static readonly string DefaultColorHexCode = "#4C86FC";
         private static Color DefaultColor { get { return GUIMethods.GetColorFromHexCode(DefaultColorHexCode); } }
-        private static GUIStyle DefaultLinkLabelStyle = new GUIStyle(EditorStyles.linkLabel)
-        {
-            border = new RectOffset(0, 0, 0, 0),
-            fontSize = 12,
-            richText = true,
-            wordWrap = false
-        };
-
-        // Icon paths
-        // Note: Make sure to import the package(s) under Assets to have all icons display properly in the editor window.
-        private static readonly string externalLinkIconPath = "Assets/Link Labels/ExternalLinkIcon.png";
+        private static GUIStyle DefaultLinkLabelStyle;
 
         #region Static Method(s)
 
@@ -45,50 +31,48 @@ namespace LinkLabels
         /// <param name="linkLabelContent">Link label.</param>
         /// <param name="labelColor">The color of the link label.</param>
         /// <param name="linkStyle">The GUI style of the link label.</param>
-        /// <param name="underlineLink">Boolean to toggle whether to underline the link label.</param>
-        /// <param name="displayIcon">Boolean to toggle whether to display an external link icon.</param>
+        /// <param name="underlineLink">When enabled, it adds a horizontal line under the link label.</param>
+        /// <param name="displayIcon">When enabled, it displays an external link ↗ icon to the right of the link label.</param>
         public static void Draw(string url, GUIContent linkLabelContent, Color labelColor, GUIStyle linkStyle,
                                 bool underlineLink, bool displayIcon)
         {
-            Vector2 defaultIconSize = EditorGUIUtility.GetIconSize();          // Default icon size
             string caption = linkLabelContent.text;                            // Caption
             string tooltip = linkLabelContent.tooltip;                         // Tooltip
 
+            // Set GUI style's rich-text to true.
             linkStyle.richText = true;
-
-            // Set icon.
-            var icon = (Texture2D)AssetDatabase.LoadAssetAtPath(externalLinkIconPath, typeof(Texture2D));
-            float iconSize = icon != null ? linkStyle.fontSize : 0f;
-            EditorGUIUtility.SetIconSize(new Vector2(iconSize, iconSize));
-            icon = displayIcon ? icon : null;
 
             // Format the specified caption.
             caption = string.IsNullOrWhiteSpace(caption) ? url : caption;
+            string uneditedCaption = caption;
+
             if (displayIcon)
             {
-                caption = icon != null ? $"{caption}" : $"{caption} ↗";
+                caption = $"{caption} ↗";
             }
 
             caption = string.Format($"<color=#{ColorUtility.ToHtmlStringRGB(labelColor)}>{caption}</color>");
 
             // Create link label.
             GUIContent linkContent = new GUIContent(caption);
-
+            // Set link label's color as opaque.
             labelColor.a = 1f;
+
             GUIMethods.BeginGUIColor(Color.white);
             GUIMethods.BeginGUIContentColor(labelColor);
-            GUILayout.BeginHorizontal();
             GUILayout.Label(linkContent, linkStyle);
+
+            var fullRect = GUILayoutUtility.GetLastRect();
             var rect = GUILayoutUtility.GetLastRect();
-            GUILayout.Label(icon, linkStyle);
-            GUILayout.EndHorizontal();
 
             // Display an invisible 2D rectangle on the link label to 
             if (IsValidURL(url))
             {
-                float contentWidth = linkStyle.CalcSize(new GUIContent(caption)).x;
-                rect.width = icon != null ? contentWidth + EditorGUIUtility.GetIconSize().x + 8f : contentWidth;
-                EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
+                float fullContentWidth = linkStyle.CalcSize(linkContent).x;
+                float contentWidth = linkStyle.CalcSize(new GUIContent(uneditedCaption)).x;
+                fullRect.width = fullContentWidth;
+                rect.width = contentWidth;
+                EditorGUIUtility.AddCursorRect(fullRect, MouseCursor.Link);
             }
 
             // Draw a colored line underneath the link label.
@@ -99,7 +83,7 @@ namespace LinkLabels
 
             // Set if link is clicked.
             GUIMethods.BeginGUIColor(Color.clear);
-            bool isClicked = GUI.Button(rect, new GUIContent("", tooltip));
+            bool isClicked = GUI.Button(fullRect, new GUIContent("", tooltip));
             GUIMethods.EndGUIColor();
 
             // Open the specified URL on click.
@@ -118,29 +102,32 @@ namespace LinkLabels
 
             GUIMethods.EndGUIContentColor();
             GUIMethods.EndGUIColor();
-            EditorGUIUtility.SetIconSize(defaultIconSize);
         }
 
-        #region Overloading Method(s)
+        #region Overloaded Method(s)
         public static void Draw(string url)
         {
+            DefaultLinkLabelStyleInit();
             GUIContent linkLabelContent = new GUIContent();
             Draw(url, linkLabelContent, DefaultColor, DefaultLinkLabelStyle, false, false);
         }
 
         public static void Draw(string url, string caption)
         {
+            DefaultLinkLabelStyleInit();
             GUIContent linkLabelContent = new GUIContent(caption);
             Draw(url, linkLabelContent, DefaultColor, DefaultLinkLabelStyle, false, false);
         }
 
         public static void Draw(string url, GUIContent linkLabelContent)
         {
+            DefaultLinkLabelStyleInit();
             Draw(url, linkLabelContent, DefaultColor, DefaultLinkLabelStyle, false, false);
         }
 
         public static void Draw(string url, string caption, Color labelColor)
         {
+            DefaultLinkLabelStyleInit();
             GUIContent linkLabelContent = new GUIContent(caption);
             Draw(url, linkLabelContent, labelColor, DefaultLinkLabelStyle, false, false);
         }
@@ -153,13 +140,28 @@ namespace LinkLabels
 
         public static void Draw(string url, GUIContent linkLabelContent, Color labelColor)
         {
+            DefaultLinkLabelStyleInit();
             Draw(url, linkLabelContent, labelColor, DefaultLinkLabelStyle, false, false);
         }
 
         public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode)
         {
+            DefaultLinkLabelStyleInit();
             Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
             Draw(url, linkLabelContent, hexColor, DefaultLinkLabelStyle, false, false);
+        }
+
+        public static void Draw(string url, GUIContent linkLabelContent, Color labelColor, int fontSize)
+        {
+            DefaultLinkLabelStyleInit();
+            DefaultLinkLabelStyle.fontSize = fontSize;
+            Draw(url, linkLabelContent, labelColor, DefaultLinkLabelStyle, false, false);
+        }
+
+        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, int fontSize)
+        {
+            Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
+            Draw(url, linkLabelContent, hexColor, fontSize);
         }
 
         public static void Draw(string url, string caption, Color labelColor, GUIStyle linkStyle,
@@ -186,6 +188,7 @@ namespace LinkLabels
         public static void Draw(string url, GUIContent linkLabelContent, Color labelColor, int fontSize,
                                 CustomFontStyle fontStyle, bool displayIcon)
         {
+            DefaultLinkLabelStyleInit();
             GUIStyle linkStyle = DefaultLinkLabelStyle;                             // Default GUI Style: Link label
             linkStyle.fontSize = fontSize;                                          // Font size
             bool underlineLink = fontStyle.HasFlag(CustomFontStyle.Underline);      // Underline link
@@ -203,6 +206,10 @@ namespace LinkLabels
                 else if (fontStyle.HasFlag(CustomFontStyle.Italic))
                 {
                     linkStyle.fontStyle = FontStyle.Italic;
+                }
+                else
+                {
+                    linkStyle.fontStyle = FontStyle.Normal;
                 }
             }
             else
@@ -229,6 +236,22 @@ namespace LinkLabels
         #endregion
 
         #endregion
+
+        /// <summary>
+        /// Initialize default link label style.
+        /// </summary>
+        private static void DefaultLinkLabelStyleInit()
+        {
+            DefaultLinkLabelStyle = new GUIStyle(EditorStyles.linkLabel)
+            {
+                fontStyle = FontStyle.Normal,
+                border = new RectOffset(0, 0, 0, 0),
+                fontSize = 12,
+                richText = true,
+                wordWrap = false,
+                clipping = TextClipping.Clip
+            };
+        }
 
         /// <summary>
         /// Add an underline under the link label.

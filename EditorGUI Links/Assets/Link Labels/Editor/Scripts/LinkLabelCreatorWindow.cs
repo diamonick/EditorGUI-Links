@@ -11,11 +11,12 @@ namespace LinkLabels
     public class LinkLabelCreatorWindow : EditorWindow
     {
         #region Constants
-        private const int MIN_FONT_SIZE = 1;
-        private const int MAX_FONT_SIZE = 100;
+        private const int MIN_FONT_SIZE = 1;                        // Minimum font size.
+        private const int MAX_FONT_SIZE = 100;                      // Maximum font size.
         #endregion
 
         private static LinkLabelCreatorWindow window;               // Editor window.
+        public static float windowWidth;                            // Editor window's width.
         private Vector2 scrollPosition;                             // Current scroll position
         private static readonly string DefaultColor = "#4C86FC";    // Default link label color.
 
@@ -67,13 +68,14 @@ namespace LinkLabels
         private GUIStyle formatOptionStyle;
         private GUIStyle incrementButtonStyle;
         private GUIStyle customLinkLabelStyle;
+        private GUIStyle previewStyle;
         private GUIStyle copyButtonStyle;
         #endregion
 
         #region Tooltips
         private static readonly string urlTooltip = "Type a valid URL.";
         private static readonly string captionTooltip = "Type a caption. If a caption is not provided, the URL will be used " +
-                                                        "as the name of the link instead.";
+                                                        "as the name of the link label instead.";
         private static readonly string tooltipTooltip = "Type a custom tooltip. Hover over the link label to see the tooltip.";
         private static readonly string formatOptionsTooltip = "Change link label formatting such as font style, size, and more.\n\n" +
                                                               "• Font Style: Set the font style(s) of the link label.\n" +
@@ -140,19 +142,22 @@ namespace LinkLabels
             if (window.docked)
             {
                 window.minSize = new Vector2(360f, 312f);
-                window.maxSize = new Vector2(1920f, 1080f);
+                window.maxSize = new Vector2(1080f, 1080f);
             }
             else
             {
                 window.minSize = new Vector2(360f, 312f);
-                window.maxSize = new Vector2(1920f, 1080f);
+                window.maxSize = new Vector2(1080f, 1080f);
             }
 
+            windowWidth = position.width;
+
             // Calculate field width.
-            float fieldWidth = (position.width / 2f) + 29f;
+            float fieldWidth = (position.width / 2f) + 22f;
 
             // Update scroll position in the editor window.
             scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, true, GUIStyle.none, GUI.skin.verticalScrollbar);
+
             #region Banner
             // Get banner image texture.
             Texture2D banner = (Texture2D)AssetDatabase.LoadAssetAtPath(bannerPath, typeof(Texture2D));
@@ -161,11 +166,10 @@ namespace LinkLabels
                 float bannerHeight = banner.height;                 // Banner height
                 float bannerWidth = banner.width;                   // Banner width
                 float aspectRatio = bannerHeight / bannerWidth;     // Aspect ratio
-                Rect bannerRect = GUILayoutUtility.GetRect(bannerHeight, aspectRatio * Screen.width * 0.5f);
+                Rect bannerRect = GUILayoutUtility.GetRect(bannerHeight, aspectRatio * Screen.width * 0.5f, GUILayout.MaxWidth(position.width - 12), GUILayout.ExpandWidth(false));
                 EditorGUI.DrawTextureTransparent(bannerRect, banner);
             }
             #endregion
-
 
             #region Description
             GUILayout.Label(description, descriptionStyle);
@@ -184,10 +188,10 @@ namespace LinkLabels
             DrawInfoTooltipIcon(urlTooltip);
             GUILayout.EndHorizontal();
 
-            urlText = EditorGUILayout.TextField(urlText);
+            urlText = EditorGUILayout.TextField(urlText, GUILayout.MaxWidth(position.width - 18));
 
             #region Warning
-            // Display a warning block if the URL is invalid.
+            // Display a warning textbox if the URL is invalid.
             if (!IsValidURL(urlText))
             {
                 GUIMethods.BeginGUIBackgroundColor(GUIMethods.GetColorFromHexCode("#ffa200") * 1.5f);
@@ -207,7 +211,7 @@ namespace LinkLabels
             DrawInfoTooltipIcon(captionTooltip);
             GUILayout.EndHorizontal();
 
-            previewText = EditorGUILayout.TextField(previewText);
+            previewText = EditorGUILayout.TextField(previewText, GUILayout.MaxWidth(position.width - 18));
             #endregion
 
             GUILayout.Space(5f);
@@ -218,7 +222,7 @@ namespace LinkLabels
             DrawInfoTooltipIcon(tooltipTooltip);
             GUILayout.EndHorizontal();
 
-            tooltipText = EditorGUILayout.TextArea(tooltipText);
+            tooltipText = EditorGUILayout.TextArea(tooltipText, GUILayout.MaxWidth(position.width - 18));
             #endregion
 
             GUILayout.Space(5f);
@@ -229,10 +233,10 @@ namespace LinkLabels
             DrawInfoTooltipIcon(formatOptionsTooltip);
             GUILayout.EndHorizontal();
 
-            GUILayout.BeginVertical(EditorStyles.helpBox);
+            GUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.MaxWidth(position.width - 18f));
 
             #region Font Style
-            GUILayout.BeginHorizontal();
+            GUILayout.BeginHorizontal(GUILayout.MaxWidth(position.width - 24f));
             DrawBulletPoint("#ffbd61");
             GUILayout.Label("Font Style", formatOptionStyle);
             GUIMethods.BeginGUIBackgroundColor(GUIMethods.GetColorFromHexCode("#ff9400") * 2.5f);
@@ -244,7 +248,7 @@ namespace LinkLabels
             GUILayout.Space(5f);
 
             #region Font Size
-            GUILayout.BeginHorizontal();
+            GUILayout.BeginHorizontal(GUILayout.MaxWidth(position.width - 24f));
 
             DrawBulletPoint("#61ffda");
             GUILayout.Label("Font Size", formatOptionStyle);
@@ -264,7 +268,7 @@ namespace LinkLabels
 
             GUIMethods.EndGUIBackgroundColor();
             GUI.enabled = true;
-            fontSize = EditorGUILayout.IntField(Mathf.Clamp(fontSize, MIN_FONT_SIZE, MAX_FONT_SIZE), GUILayout.ExpandWidth(false), GUILayout.Width(fieldWidth - 54));
+            fontSize = Mathf.Clamp(EditorGUILayout.IntField(fontSize, GUILayout.ExpandWidth(false), GUILayout.Width(fieldWidth - 54f)), MIN_FONT_SIZE, MAX_FONT_SIZE);
             GUI.enabled = belowMaxFontSize;
             Color plusButtonColor = belowMaxFontSize ? GUIMethods.GetColorFromHexCode("#00f088") * 2f : Color.white;
             GUIMethods.BeginGUIBackgroundColor(plusButtonColor);
@@ -284,14 +288,14 @@ namespace LinkLabels
             GUILayout.Space(5f);
 
             #region Link Color
-            GUILayout.BeginHorizontal();
+            GUILayout.BeginHorizontal(GUILayout.MaxWidth(position.width - 24f));
 
             DrawBulletPoint("#ffbd61");
             GUILayout.Label("Link Color", formatOptionStyle);
             linkLabelColor = EditorGUILayout.ColorField(linkLabelColor, GUILayout.ExpandWidth(true), GUILayout.Width(fieldWidth - 27f));
             GUI.enabled = !IsDefaultColor;
             GUI.backgroundColor = IsDefaultColor ? Color.white : GUIMethods.GetColorFromHexCode("#00f088") * 2f;
-            GUIContent resetColorContent = new GUIContent("R", resetColorTooltip);
+            GUIContent resetColorContent = new GUIContent("↺", resetColorTooltip);
             if (GUILayout.Button(resetColorContent, incrementButtonStyle))
             {
                 ResetLinkLabelColor();
@@ -305,7 +309,7 @@ namespace LinkLabels
             GUILayout.Space(5f);
 
             #region Display Icon?
-            GUILayout.BeginHorizontal();
+            GUILayout.BeginHorizontal(GUILayout.MaxWidth(position.width - 24f));
 
             DrawBulletPoint("#61ffda");
             GUILayout.Label("Display Icon?", formatOptionStyle);
@@ -331,11 +335,11 @@ namespace LinkLabels
             GUILayout.EndHorizontal();
 
             GUIMethods.BeginGUIBackgroundColor(Color.black * 2.5f);
-            GUILayout.BeginHorizontal(EditorStyles.helpBox, GUILayout.ExpandWidth(true));
+            GUILayout.BeginHorizontal(EditorStyles.helpBox, GUILayout.MaxWidth(position.width - 18f), GUILayout.ExpandWidth(false));
             GUIContent linkLabelContent = new GUIContent(previewText, tooltipText);
             LinkLabel.Draw(urlText, linkLabelContent, linkLabelColor, customLinkLabelStyle, underlineLink, displayLinkIcon);
-            GUIMethods.EndGUIBackgroundColor();
             GUILayout.EndHorizontal();
+            GUIMethods.EndGUIBackgroundColor();
             #endregion
 
             GUILayout.Space(2f);
@@ -347,8 +351,8 @@ namespace LinkLabels
             GUILayout.EndHorizontal();
 
             GUIMethods.BeginGUIBackgroundColor(Color.black * 2.5f);
-            GUILayout.BeginHorizontal(EditorStyles.helpBox, GUILayout.ExpandWidth(true));
-            GUILayout.Label(methodRichText, descriptionStyle);
+            GUILayout.BeginHorizontal(EditorStyles.helpBox);
+            GUILayout.Label(methodRichText, previewStyle);
             GUIMethods.EndGUIBackgroundColor();
             GUILayout.EndHorizontal();
             #endregion
@@ -437,7 +441,7 @@ namespace LinkLabels
                 fontSize = 12,
                 stretchWidth = true,
                 fixedWidth = 12 + (24 * indents),
-                contentOffset = new Vector2(24 * indents, 0f)
+                contentOffset = new Vector2(24 * indents, -1f)
             };
 
             // Draw bullet point w/ the specified color.
@@ -455,6 +459,7 @@ namespace LinkLabels
         {
             descriptionStyle = new GUIStyle(GUI.skin.label)
             {
+                fixedWidth = position.width - 18,
                 wordWrap = true,
                 richText = true
             };
@@ -466,6 +471,7 @@ namespace LinkLabels
 
             copyButtonStyle = new GUIStyle(GUI.skin.button)
             {
+                fixedWidth = position.width - 18,
                 fixedHeight = 48,
                 fontSize = 20,
                 fontStyle = FontStyle.Bold
@@ -481,12 +487,20 @@ namespace LinkLabels
                 fixedWidth = 24
             };
 
+            previewStyle = new GUIStyle(GUI.skin.label)
+            {
+                fixedWidth = position.width - 24,
+                wordWrap = true,
+                richText = true
+            };
+
             customLinkLabelStyle = new GUIStyle(EditorStyles.linkLabel)
             {
                 fontSize = this.fontSize,
                 border = new RectOffset(0, 0, 0, 0),
                 richText = true,
-                wordWrap = false
+                wordWrap = false,
+                clipping = TextClipping.Clip
             };
         }
 
