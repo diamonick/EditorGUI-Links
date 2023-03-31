@@ -211,13 +211,13 @@ namespace LinkLabels
 
         public static void Draw(string url, GUIContent linkLabelContent, Color labelColor, Align alignment, int fontSize)
         {
-            Draw(url, linkLabelContent, labelColor, alignment, fontSize, CustomFontStyle.Normal, true);
+            Draw(url, linkLabelContent, labelColor, alignment, fontSize, CustomFontStyle.Normal, false);
         }
 
         public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, Align alignment, int fontSize)
         {
             Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
-            Draw(url, linkLabelContent, hexColor, alignment, fontSize, CustomFontStyle.Normal, true);
+            Draw(url, linkLabelContent, hexColor, alignment, fontSize, CustomFontStyle.Normal, false);
         }
 
         public static void Draw(string url, string caption, Color labelColor, Align alignment,

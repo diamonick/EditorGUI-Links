@@ -156,7 +156,7 @@ namespace LinkLabels
             GUILayout.Space(4f);
 
             GUIContent documentationContent = new GUIContent("Online Documentation (PDF)");
-            LinkLabel.Draw("https://assetstore.unity.com/", documentationContent, "#00FFE1", Align.Left, 12, 1, true);
+            LinkLabel.Draw("https://acrobat.adobe.com/link/track?uri=urn:aaid:scds:US:be559c47-2c87-3168-ba65-27288390dbc8", documentationContent, "#00FFE1", Align.Left, 12, 1, true);
             #endregion
 
             DrawLine(Color.gray, 1, 4f);
