@@ -23,12 +23,12 @@ namespace LinkLabels
         #region Asset paths
         // Banner
         // Note: Make sure to import the package(s) under Assets to have the banner display properly in the editor window.
-        private readonly string bannerPath = "Assets/Link Labels/Textures/Link Labels Banner.png";
+        private readonly string bannerPath = "Assets/Link Labels/Editor/Textures/Link Labels Banner.png";
 
         // Icon paths
         // Note: Make sure to import the package(s) under Assets to have all icons display properly in the editor window.
-        private readonly string infoTooltipIconPath = "Assets/Link Labels/Textures/InfoTooltipIcon.png";
-        private readonly string copyIconPath = "Assets/Link Labels/Textures/CopyIcon.png";
+        private readonly string infoTooltipIconPath = "Assets/Link Labels/Editor/Textures/InfoTooltipIcon.png";
+        private readonly string copyIconPath = "Assets/Link Labels/Editor/Textures/CopyIcon.png";
         #endregion
 
         private static readonly string windowTitle = "Link Label Creator";
