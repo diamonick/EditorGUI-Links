@@ -23,12 +23,12 @@ namespace LinkLabels
         #region Asset paths
         // Banner
         // Note: Make sure to import the package(s) under Assets to have the banner display properly in the editor window.
-        private readonly string bannerPath = "Assets/Link Labels/Link Labels Banner.png";
+        private readonly string bannerPath = "Assets/Link Labels/Textures/Link Labels Banner.png";
 
         // Icon paths
         // Note: Make sure to import the package(s) under Assets to have all icons display properly in the editor window.
-        private readonly string infoTooltipIconPath = "Assets/Link Labels/InfoTooltipIcon.png";
-        private readonly string copyIconPath = "Assets/Link Labels/CopyIcon.png";
+        private readonly string infoTooltipIconPath = "Assets/Link Labels/Textures/InfoTooltipIcon.png";
+        private readonly string copyIconPath = "Assets/Link Labels/Textures/CopyIcon.png";
         #endregion
 
         private static readonly string windowTitle = "Link Label Creator";
@@ -53,6 +53,7 @@ namespace LinkLabels
                 return linkLabelColor == GUIMethods.GetColorFromHexCode(DefaultColor);
             }
         }
+        private Align labelAlignment;
         private CustomFontStyle fontStyle;
         private int fontStyleID { get { return (int)fontStyle; } }
         string[] fontStyleStrings = { "Normal", "Bold", "Italic", "Bold and Italic", "Underline" };
@@ -67,7 +68,6 @@ namespace LinkLabels
         private GUIStyle descriptionStyle;
         private GUIStyle formatOptionStyle;
         private GUIStyle incrementButtonStyle;
-        private GUIStyle customLinkLabelStyle;
         private GUIStyle previewStyle;
         private GUIStyle copyButtonStyle;
         #endregion
@@ -77,7 +77,8 @@ namespace LinkLabels
         private static readonly string captionTooltip = "Type a caption. If a caption is not provided, the URL will be used " +
                                                         "as the name of the link label instead.";
         private static readonly string tooltipTooltip = "Type a custom tooltip. Hover over the link label to see the tooltip.";
-        private static readonly string formatOptionsTooltip = "Change link label formatting such as font style, size, and more.\n\n" +
+        private static readonly string formatOptionsTooltip = "Change link label formatting such as font styles, size, and more.\n\n" +
+                                                              "• Alignment: Set the text alignment of the link label.\n" +
                                                               "• Font Style: Set the font style(s) of the link label.\n" +
                                                               "• Font Size: Set the font size of the link label.\n" +
                                                               "• Link Color: Set the color of the link label.\n" +
@@ -117,27 +118,6 @@ namespace LinkLabels
 
             underlineLink = fontStyle.HasFlag(CustomFontStyle.Underline);
 
-            // Set link label's font style.
-            if (fontStyle.HasFlag(CustomFontStyle.Underline))
-            {
-                if (fontStyle.HasFlag(CustomFontStyle.Bold) && fontStyle.HasFlag(CustomFontStyle.Italic))
-                {
-                    customLinkLabelStyle.fontStyle = FontStyle.BoldAndItalic;
-                }
-                else if (fontStyle.HasFlag(CustomFontStyle.Bold))
-                {
-                    customLinkLabelStyle.fontStyle = FontStyle.Bold;
-                }
-                else if (fontStyle.HasFlag(CustomFontStyle.Italic))
-                {
-                    customLinkLabelStyle.fontStyle = FontStyle.Italic;
-                }
-            }
-            else
-            {
-                customLinkLabelStyle.fontStyle = (FontStyle)((int)fontStyle);
-            }
-
             // Set minimum & maximum window size (Docked / Windowed).
             if (window.docked)
             {
@@ -176,7 +156,7 @@ namespace LinkLabels
             GUILayout.Space(4f);
 
             GUIContent documentationContent = new GUIContent("Online Documentation (PDF)");
-            LinkLabel.Draw("https://assetstore.unity.com/", documentationContent, "#00FFE1", 12, 1, true);
+            LinkLabel.Draw("https://assetstore.unity.com/", documentationContent, "#00FFE1", Align.Left, 12, 1, true);
             #endregion
 
             DrawLine(Color.gray, 1, 4f);
@@ -234,6 +214,18 @@ namespace LinkLabels
             GUILayout.EndHorizontal();
 
             GUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.MaxWidth(position.width - 18f));
+
+            #region Alignment
+            GUILayout.BeginHorizontal(GUILayout.MaxWidth(position.width - 24f));
+            DrawBulletPoint("#61ffda");
+            GUILayout.Label("Alignment", formatOptionStyle);
+            GUIMethods.BeginGUIBackgroundColor(GUIMethods.GetColorFromHexCode("#00d1ce") * 2.5f);
+            labelAlignment = (Align)EditorGUILayout.EnumPopup(labelAlignment, GUILayout.Width(fieldWidth));
+            GUIMethods.EndGUIBackgroundColor();
+            GUILayout.EndHorizontal();
+            #endregion
+
+            GUILayout.Space(5f);
 
             #region Font Style
             GUILayout.BeginHorizontal(GUILayout.MaxWidth(position.width - 24f));
@@ -337,7 +329,7 @@ namespace LinkLabels
             GUIMethods.BeginGUIBackgroundColor(Color.black * 2.5f);
             GUILayout.BeginHorizontal(EditorStyles.helpBox, GUILayout.MaxWidth(position.width - 18f), GUILayout.ExpandWidth(false));
             GUIContent linkLabelContent = new GUIContent(previewText, tooltipText);
-            LinkLabel.Draw(urlText, linkLabelContent, linkLabelColor, customLinkLabelStyle, underlineLink, displayLinkIcon);
+            LinkLabel.Draw(urlText, linkLabelContent, linkLabelColor, labelAlignment, fontSize, fontStyle, displayLinkIcon);
             GUILayout.EndHorizontal();
             GUIMethods.EndGUIBackgroundColor();
             #endregion
@@ -493,15 +485,6 @@ namespace LinkLabels
                 wordWrap = true,
                 richText = true
             };
-
-            customLinkLabelStyle = new GUIStyle(EditorStyles.linkLabel)
-            {
-                fontSize = this.fontSize,
-                border = new RectOffset(0, 0, 0, 0),
-                richText = true,
-                wordWrap = false,
-                clipping = TextClipping.Clip
-            };
         }
 
         /// <summary>
@@ -550,13 +533,13 @@ namespace LinkLabels
             if (parseAsRichText)
             {
                 return $"<color=#4BC0A8>GUIContent</color> <color=#9AD9FB>linkLabelContent</color> = <color=#569CD6>new</color> <color=#4BC0A8>GUIContent</color>(<color=#D59C84>\"{previewText}\"</color>, <color=#D59C84>\"{tooltipText}\"</color>);\n" +
-                       $"<color=#4BC0A8>LinkLabel</color>.<color=#DCDCAA>Draw</color>(<color=#D59C84>\"{urlText}\"</color>, <color=#9AD9FB>linkLabelContent</color>, <color=#D59C84>\"#{linkLabelColorHexCode}\"</color>, <color=#B5CEA8>{fontSize}</color>, " +
+                       $"<color=#4BC0A8>LinkLabel</color>.<color=#DCDCAA>Draw</color>(<color=#D59C84>\"{urlText}\"</color>, <color=#9AD9FB>linkLabelContent</color>, <color=#D59C84>\"#{linkLabelColorHexCode}\"</color>, <color=#B8D7a3>Align</color>.{labelAlignment}, <color=#B5CEA8>{fontSize}</color>, " +
                        $"<color=#B5CEA8>{(int)fontStyle}</color>, <color=#569CD6>{displayLinkIconString}</color>);";
             }
             else
             {
                 return $"GUIContent linkLabelContent = new GUIContent(\"{previewText}\", \"{tooltipText}\");\n" +
-                       $"LinkLabel.Draw(\"{urlText}\", linkLabelContent, \"#{linkLabelColorHexCode}\", {fontSize}, " +
+                       $"LinkLabel.Draw(\"{urlText}\", linkLabelContent, \"#{linkLabelColorHexCode}\", Align.{labelAlignment}, {fontSize}, " +
                        $"{(int)fontStyle}, {displayLinkIconString});";
             }
 

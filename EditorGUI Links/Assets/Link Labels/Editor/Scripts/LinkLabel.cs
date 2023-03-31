@@ -15,6 +15,13 @@ namespace LinkLabels
         Underline = 4
     }
 
+    public enum Align
+    {
+        Left = 0,
+        Center = 1,
+        Right = 2
+    }
+
     public static class LinkLabel
     {
         private static readonly string DefaultColorHexCode = "#4C86FC";
@@ -30,11 +37,12 @@ namespace LinkLabels
         /// <param name="url">The URL to attach to the link label.</param>
         /// <param name="linkLabelContent">Link label.</param>
         /// <param name="labelColor">The color of the link label.</param>
+        /// <param name="alignment">The text alignment of the link label.</param>
         /// <param name="linkStyle">The GUI style of the link label.</param>
         /// <param name="underlineLink">When enabled, it adds a horizontal line under the link label.</param>
         /// <param name="displayIcon">When enabled, it displays an external link ↗ icon to the right of the link label.</param>
-        public static void Draw(string url, GUIContent linkLabelContent, Color labelColor, GUIStyle linkStyle,
-                                bool underlineLink, bool displayIcon)
+        private static void Draw(string url, GUIContent linkLabelContent, Color labelColor, Align alignment,
+                                GUIStyle linkStyle, bool underlineLink, bool displayIcon)
         {
             string caption = linkLabelContent.text;                            // Caption
             string tooltip = linkLabelContent.tooltip;                         // Tooltip
@@ -54,23 +62,31 @@ namespace LinkLabels
             caption = string.Format($"<color=#{ColorUtility.ToHtmlStringRGB(labelColor)}>{caption}</color>");
 
             // Create link label.
-            GUIContent linkContent = new GUIContent(caption);
+            GUIContent linkContent = new GUIContent(caption, tooltip);
             // Set link label's color as opaque.
             labelColor.a = 1f;
 
             GUIMethods.BeginGUIColor(Color.white);
             GUIMethods.BeginGUIContentColor(labelColor);
-            GUILayout.Label(linkContent, linkStyle);
 
+            #region Link Label Group
+            GUILayout.BeginHorizontal();
+            if (alignment == Align.Right || alignment == Align.Center) { GUILayout.FlexibleSpace(); }
+
+            // Set if link is clicked.
+            bool isClicked = GUILayout.Button(linkContent, linkStyle, GUILayout.ExpandWidth(false));
             var fullRect = GUILayoutUtility.GetLastRect();
             var rect = GUILayoutUtility.GetLastRect();
+
+            if (alignment == Align.Left || alignment == Align.Center) { GUILayout.FlexibleSpace(); }
+            GUILayout.EndHorizontal();
+            #endregion
+
 
             // Display an invisible 2D rectangle on the link label to 
             if (IsValidURL(url))
             {
-                float fullContentWidth = linkStyle.CalcSize(linkContent).x;
                 float contentWidth = linkStyle.CalcSize(new GUIContent(uneditedCaption)).x;
-                fullRect.width = fullContentWidth;
                 rect.width = contentWidth;
                 EditorGUIUtility.AddCursorRect(fullRect, MouseCursor.Link);
             }
@@ -81,9 +97,8 @@ namespace LinkLabels
                 UnderlineLink(rect, labelColor);
             }
 
-            // Set if link is clicked.
             GUIMethods.BeginGUIColor(Color.clear);
-            bool isClicked = GUI.Button(fullRect, new GUIContent("", tooltip));
+            //bool isClicked = GUI.Button(fullRect, new GUIContent("", tooltip));
             GUIMethods.EndGUIColor();
 
             // Open the specified URL on click.
@@ -109,84 +124,118 @@ namespace LinkLabels
         {
             DefaultLinkLabelStyleInit();
             GUIContent linkLabelContent = new GUIContent();
-            Draw(url, linkLabelContent, DefaultColor, DefaultLinkLabelStyle, false, false);
+            Draw(url, linkLabelContent, DefaultColor, Align.Left, DefaultLinkLabelStyle, false, false);
         }
 
         public static void Draw(string url, string caption)
         {
             DefaultLinkLabelStyleInit();
             GUIContent linkLabelContent = new GUIContent(caption);
-            Draw(url, linkLabelContent, DefaultColor, DefaultLinkLabelStyle, false, false);
+            Draw(url, linkLabelContent, DefaultColor, Align.Left, DefaultLinkLabelStyle, false, false);
         }
 
         public static void Draw(string url, GUIContent linkLabelContent)
         {
             DefaultLinkLabelStyleInit();
-            Draw(url, linkLabelContent, DefaultColor, DefaultLinkLabelStyle, false, false);
+            Draw(url, linkLabelContent, DefaultColor, Align.Left, DefaultLinkLabelStyle, false, false);
+        }
+
+        public static void Draw(string url, Align alignment)
+        {
+            DefaultLinkLabelStyleInit();
+            GUIContent linkLabelContent = new GUIContent();
+            Draw(url, linkLabelContent, DefaultColor, alignment, DefaultLinkLabelStyle, false, false);
+        }
+
+        public static void Draw(string url, string caption, Align alignment)
+        {
+            DefaultLinkLabelStyleInit();
+            GUIContent linkLabelContent = new GUIContent(caption);
+            Draw(url, linkLabelContent, DefaultColor, alignment, DefaultLinkLabelStyle, false, false);
+        }
+
+        public static void Draw(string url, GUIContent linkLabelContent, Align alignment)
+        {
+            DefaultLinkLabelStyleInit();
+            Draw(url, linkLabelContent, DefaultColor, alignment, DefaultLinkLabelStyle, false, false);
         }
 
         public static void Draw(string url, string caption, Color labelColor)
         {
-            DefaultLinkLabelStyleInit();
-            GUIContent linkLabelContent = new GUIContent(caption);
-            Draw(url, linkLabelContent, labelColor, DefaultLinkLabelStyle, false, false);
+            Draw(url, caption, labelColor, Align.Left);
         }
 
         public static void Draw(string url, string caption, string hexColorCode)
         {
+            Draw(url, caption, hexColorCode, Align.Left);
+        }
+
+        public static void Draw(string url, string caption, Color labelColor, Align alignment)
+        {
+            DefaultLinkLabelStyleInit();
+            GUIContent linkLabelContent = new GUIContent(caption);
+            Draw(url, linkLabelContent, labelColor, alignment, DefaultLinkLabelStyle, false, false);
+        }
+
+        public static void Draw(string url, string caption, string hexColorCode, Align alignment)
+        {
             Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
-            Draw(url, caption, hexColor);
+            Draw(url, caption, hexColor, alignment);
         }
 
         public static void Draw(string url, GUIContent linkLabelContent, Color labelColor)
         {
             DefaultLinkLabelStyleInit();
-            Draw(url, linkLabelContent, labelColor, DefaultLinkLabelStyle, false, false);
+            Draw(url, linkLabelContent, labelColor, Align.Left, DefaultLinkLabelStyle, false, false);
         }
 
         public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode)
         {
             DefaultLinkLabelStyleInit();
             Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
-            Draw(url, linkLabelContent, hexColor, DefaultLinkLabelStyle, false, false);
+            Draw(url, linkLabelContent, hexColor, Align.Left, DefaultLinkLabelStyle, false, false);
         }
 
-        public static void Draw(string url, GUIContent linkLabelContent, Color labelColor, int fontSize)
+        public static void Draw(string url, GUIContent linkLabelContent, Color labelColor, Align alignment)
         {
             DefaultLinkLabelStyleInit();
-            DefaultLinkLabelStyle.fontSize = fontSize;
-            Draw(url, linkLabelContent, labelColor, DefaultLinkLabelStyle, false, false);
+            Draw(url, linkLabelContent, labelColor, alignment, DefaultLinkLabelStyle, false, false);
         }
 
-        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, int fontSize)
+        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, Align alignment)
+        {
+            DefaultLinkLabelStyleInit();
+            Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
+            Draw(url, linkLabelContent, hexColor, alignment, DefaultLinkLabelStyle, false, false);
+        }
+
+        public static void Draw(string url, GUIContent linkLabelContent, Color labelColor, Align alignment, int fontSize)
+        {
+            Draw(url, linkLabelContent, labelColor, alignment, fontSize, CustomFontStyle.Normal, true);
+        }
+
+        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, Align alignment, int fontSize)
         {
             Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
-            Draw(url, linkLabelContent, hexColor, fontSize);
+            Draw(url, linkLabelContent, hexColor, alignment, fontSize, CustomFontStyle.Normal, true);
         }
 
-        public static void Draw(string url, string caption, Color labelColor, GUIStyle linkStyle,
-                                bool underlineLink, bool displayIcon)
+        public static void Draw(string url, string caption, Color labelColor, Align alignment,
+                                int fontSize, CustomFontStyle fontStyle, bool displayIcon)
         {
             GUIContent linkLabelContent = new GUIContent(caption);
-            Draw(url, linkLabelContent, labelColor, linkStyle, underlineLink, displayIcon);
+            Draw(url, linkLabelContent, labelColor, alignment, fontSize, fontStyle, displayIcon);
         }
 
-        public static void Draw(string url, string caption, string hexColorCode, GUIStyle linkStyle,
-                                bool underlineLink, bool displayIcon)
+        public static void Draw(string url, string caption, string hexColorCode, Align alignment,
+                                int fontSize, CustomFontStyle fontStyle, bool displayIcon)
         {
             Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
-            Draw(url, caption, hexColor, linkStyle, underlineLink, displayIcon);
+            Draw(url, caption, hexColor, alignment, fontSize, fontStyle, displayIcon);
         }
 
-        public static void Draw(string url, string caption, string hexColorCode, int fontSize,
-                                CustomFontStyle fontStyle, bool displayIcon)
-        {
-            GUIContent linkLabelContent = new GUIContent(caption);
-            Draw(url, linkLabelContent, hexColorCode, fontSize, fontStyle, displayIcon);
-        }
-
-        public static void Draw(string url, GUIContent linkLabelContent, Color labelColor, int fontSize,
-                                CustomFontStyle fontStyle, bool displayIcon)
+        public static void Draw(string url, GUIContent linkLabelContent, Color labelColor, Align alignment,
+                                int fontSize, CustomFontStyle fontStyle, bool displayIcon)
         {
             DefaultLinkLabelStyleInit();
             GUIStyle linkStyle = DefaultLinkLabelStyle;                             // Default GUI Style: Link label
@@ -217,21 +266,21 @@ namespace LinkLabels
                 linkStyle.fontStyle = (FontStyle)((int)fontStyle);
             }
 
-            Draw(url, linkLabelContent, labelColor, linkStyle, underlineLink, displayIcon);
+            Draw(url, linkLabelContent, labelColor, alignment, linkStyle, underlineLink, displayIcon);
         }
 
-        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, int fontSize,
-                                CustomFontStyle fontStyle, bool displayIcon)
+        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, Align alignment,
+                                int fontSize, CustomFontStyle fontStyle, bool displayIcon)
         {
             Color hexColor = GUIMethods.GetColorFromHexCode(hexColorCode);
-            Draw(url, linkLabelContent, hexColor, fontSize, fontStyle, displayIcon);
+            Draw(url, linkLabelContent, hexColor, alignment, fontSize, fontStyle, displayIcon);
         }
 
-        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, int fontSize,
-                                int fontStyleID, bool displayIcon)
+        public static void Draw(string url, GUIContent linkLabelContent, string hexColorCode, Align alignment,
+                                int fontSize, int fontStyleID, bool displayIcon)
         {
             CustomFontStyle fontStyle = (CustomFontStyle)fontStyleID;
-            Draw(url, linkLabelContent, hexColorCode, fontSize, fontStyle, displayIcon);
+            Draw(url, linkLabelContent, hexColorCode, alignment, fontSize, fontStyle, displayIcon);
         }
         #endregion
 
@@ -260,11 +309,15 @@ namespace LinkLabels
         /// <param name="lineColor">Underline color.</param>
         private static void UnderlineLink(Rect rect, Color lineColor)
         {
-            Handles.BeginGUI();
-            Handles.color = lineColor;
-            Handles.DrawLine(new Vector3(rect.xMin, rect.yMax), new Vector3(rect.xMax, rect.yMax));
-            Handles.color = Color.white;
-            Handles.EndGUI();
+            Rect lastRect = GUILayoutUtility.GetLastRect();
+            lastRect.x = rect.xMin + 2f;
+            lastRect.y += rect.height - 2;
+            lastRect.width = rect.width;
+            lastRect.height = 1f;
+
+            GUIMethods.BeginGUIBackgroundColor(lineColor * 5.5f);
+            GUI.Box(lastRect, "");
+            GUIMethods.EndGUIBackgroundColor();
         }
 
         /// <summary>
